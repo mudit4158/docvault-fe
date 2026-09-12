@@ -24,6 +24,8 @@ private val DarkColors = darkColorScheme(
     onBackground = VaultOnSurfaceDark,
     onSurface = VaultOnSurfaceDark,
     onSurfaceVariant = VaultOnSurfaceMutedDark,
+    error = VaultErrorDark,
+    onError = VaultBackgroundDark,
 )
 
 private val LightColors = lightColorScheme(
@@ -36,6 +38,8 @@ private val LightColors = lightColorScheme(
     onBackground = VaultOnSurfaceLight,
     onSurface = VaultOnSurfaceLight,
     onSurfaceVariant = VaultOnSurfaceMutedLight,
+    error = VaultError,
+    onError = VaultSurfaceLight,
 )
 
 /**

@@ -7,6 +7,15 @@ import androidx.compose.ui.graphics.Color
 val VaultAccent = Color(0xFFE6472A)
 val VaultAccentDark = Color(0xFFB8371F)
 
+// Error — deliberately a COOLER, deeper red than the warm brand accent.
+//
+// The brand accent is itself a red, and Material 3 uses `primary` for a text
+// field's focused border and label. That made simply focusing the password
+// field look like a validation failure. Focus now uses a neutral tone (see
+// docVaultTextFieldColors), so red means "wrong" and only "wrong".
+val VaultError = Color(0xFFD32F2F)
+val VaultErrorDark = Color(0xFFEF5350)
+
 // Dark palette — DocVault's primary surface treatment (the vault "stays encrypted" look).
 val VaultBackgroundDark = Color(0xFF121212)
 val VaultSurfaceDark = Color(0xFF1C1C1C)

@@ -11,9 +11,12 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        val container = (application as DocVaultApplication).container
+
         setContent {
             DocVaultTheme {
-                DocVaultNavHost()
+                DocVaultNavHost(repository = container.repository)
             }
         }
     }
