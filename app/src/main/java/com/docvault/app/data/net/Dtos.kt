@@ -116,6 +116,109 @@ data class InvitationResponse(
     val status: String,
 )
 
+// --- documents ------------------------------------------------------------
+
+@Serializable
+data class TagDto(val id: String, val label: String)
+
+@Serializable
+data class PersonSummary(
+    val id: String,
+    @SerialName("display_name") val displayName: String,
+)
+
+@Serializable
+data class DocumentSummary(
+    val id: String,
+    val name: String,
+    @SerialName("doc_type") val docType: String,
+    @SerialName("mime_type") val mimeType: String,
+    @SerialName("size_bytes") val sizeBytes: Long,
+    @SerialName("page_count") val pageCount: Int? = null,
+    @SerialName("created_at") val createdAt: String,
+    val tags: List<TagDto> = emptyList(),
+    @SerialName("share_count") val shareCount: Int = 0,
+)
+
+@Serializable
+data class DocumentPage(
+    val items: List<DocumentSummary>,
+    val total: Int,
+    val page: Int,
+    @SerialName("page_size") val pageSize: Int,
+    @SerialName("has_next") val hasNext: Boolean,
+)
+
+@Serializable
+data class ShareDto(
+    val id: String,
+    @SerialName("group_id") val groupId: String,
+    @SerialName("group_name") val groupName: String,
+    val permission: String,
+    @SerialName("created_at") val createdAt: String,
+)
+
+@Serializable
+data class DocumentDetail(
+    val id: String,
+    val name: String,
+    @SerialName("doc_type") val docType: String,
+    @SerialName("mime_type") val mimeType: String,
+    @SerialName("size_bytes") val sizeBytes: Long,
+    @SerialName("page_count") val pageCount: Int? = null,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String,
+    val owner: PersonSummary,
+    @SerialName("my_permission") val myPermission: String,
+    // Owner-only on the server; empty / null for everyone else.
+    val tags: List<TagDto> = emptyList(),
+    val shares: List<ShareDto>? = null,
+) {
+    val isOwner: Boolean get() = myPermission == "owner"
+    val canDownload: Boolean get() = myPermission == "owner" || myPermission == "download"
+}
+
+/** PATCH body. Null fields are omitted on the wire (explicitNulls = false). */
+@Serializable
+data class UpdateDocumentRequest(
+    val name: String? = null,
+    @SerialName("doc_type") val docType: String? = null,
+)
+
+@Serializable
+data class AddTagRequest(val label: String)
+
+@Serializable
+data class CreateShareRequest(
+    @SerialName("group_id") val groupId: String,
+    val permission: String,
+)
+
+@Serializable
+data class TrashItem(
+    val id: String,
+    val name: String,
+    @SerialName("doc_type") val docType: String,
+    @SerialName("size_bytes") val sizeBytes: Long,
+    @SerialName("deleted_at") val deletedAt: String,
+    @SerialName("purge_at") val purgeAt: String,
+    val restorable: Boolean,
+)
+
+@Serializable
+data class GroupDocument(
+    val id: String,
+    val name: String,
+    @SerialName("doc_type") val docType: String,
+    @SerialName("mime_type") val mimeType: String,
+    @SerialName("size_bytes") val sizeBytes: Long,
+    @SerialName("page_count") val pageCount: Int? = null,
+    @SerialName("created_at") val createdAt: String,
+    val owner: PersonSummary,
+    val permission: String,
+    @SerialName("shared_at") val sharedAt: String,
+)
+
 // --- errors ---------------------------------------------------------------
 
 /** FastAPI's error envelope: `{"detail": "..."}`. */

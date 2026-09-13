@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.docvault.app.data.ApiResult
 import com.docvault.app.data.DocVaultRepository
 import com.docvault.app.data.net.AccountSummary
+import com.docvault.app.data.net.GroupDocument
 import com.docvault.app.data.net.GroupResponse
 import com.docvault.app.data.net.MemberResponse
 import kotlinx.coroutines.Job
@@ -34,6 +35,8 @@ data class LookupState(
 data class GroupDetailUiState(
     val group: GroupResponse? = null,
     val members: List<MemberResponse> = emptyList(),
+    /** Documents shared into this group (the Documents tab, screen 18). */
+    val documents: List<GroupDocument> = emptyList(),
     val myAccountId: String? = null,
     val isLoading: Boolean = true,
     val isRefreshing: Boolean = false,
@@ -83,6 +86,10 @@ class GroupDetailViewModel(
                     }
                     return@launch
                 }
+            }
+
+            (repository.groupDocuments(groupId) as? ApiResult.Ok)?.let { docs ->
+                _state.update { it.copy(documents = docs.value) }
             }
 
             when (val members = repository.listMembers(groupId)) {

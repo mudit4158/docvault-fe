@@ -9,7 +9,7 @@ minSdk 26 / targetSdk 34 / compileSdk 34
 
 ## Current State â€” Read This First
 
-**Auth and Groups are built and talking to the real backend. Vault and Scan are still placeholders.**
+**Auth, Groups, Vault and Sharing are built and talking to the real backend. Scan is still a placeholder.**
 
 | Area | State |
 |---|---|
@@ -21,8 +21,13 @@ minSdk 26 / targetSdk 34 / compileSdk 34
 | Groups â€” list, create, detail, members | âœ… Built |
 | Invitations â€” list, accept, decline | âœ… Built |
 | Member management â€” remove, leave, transfer admin | âœ… Built |
-| Vault tab | â¬œ Placeholder â€” needs backend `document_management` |
-| Scan tab | â¬œ Placeholder â€” needs backend `document_management` |
+| Vault tab — list, search, type filter, upload with progress/retry, quota banner | ✅ Built (`ui/screens/vault/`) |
+| Document detail — download, rename, type, tags, share sheet, move to trash + undo | ✅ Built (`ui/screens/documents/`) |
+| Trash + restore | ✅ Built |
+| Group Documents tab | ✅ Built |
+| In-app preview with screenshots blocked (`FLAG_SECURE`) | ⬜ Pending — tracker #63 |
+| Access-log viewer | ⬜ Pending — tracker #66 |
+| Scan tab | ⬜ Placeholder — deliberately not built yet (Q10) |
 | Offline cache | â¬œ Not built |
 
 **To run it against a local backend, see [`README.md`](README.md).**

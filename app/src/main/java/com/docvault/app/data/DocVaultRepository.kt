@@ -1,20 +1,37 @@
 package com.docvault.app.data
 
+import android.content.ContentResolver
+import android.net.Uri
 import com.docvault.app.data.net.AccountResponse
 import com.docvault.app.data.net.AccountSummary
+import com.docvault.app.data.net.AddTagRequest
 import com.docvault.app.data.net.ApiProvider
 import com.docvault.app.data.net.ChangePasswordRequest
-import com.docvault.app.data.net.LookupRequest
 import com.docvault.app.data.net.CreateGroupRequest
+import com.docvault.app.data.net.CreateShareRequest
+import com.docvault.app.data.net.DocumentDetail
+import com.docvault.app.data.net.DocumentPage
+import com.docvault.app.data.net.DocumentSummary
+import com.docvault.app.data.net.GroupDocument
 import com.docvault.app.data.net.GroupResponse
 import com.docvault.app.data.net.InvitationResponse
 import com.docvault.app.data.net.InviteRequest
 import com.docvault.app.data.net.LoginRequest
+import com.docvault.app.data.net.LookupRequest
 import com.docvault.app.data.net.MemberResponse
 import com.docvault.app.data.net.QuotaResponse
 import com.docvault.app.data.net.RegisterRequest
+import com.docvault.app.data.net.ShareDto
+import com.docvault.app.data.net.TagDto
 import com.docvault.app.data.net.TransferAdminRequest
+import com.docvault.app.data.net.TrashItem
+import com.docvault.app.data.net.UpdateDocumentRequest
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
 
 /**
  * Single entry point to the backend for the UI layer.
@@ -90,6 +107,9 @@ class DocVaultRepository(
     suspend fun deleteGroup(groupId: String): ApiResult<Unit> =
         apiCall { apiProvider.api().deleteGroup(groupId) }
 
+    suspend fun groupDocuments(groupId: String): ApiResult<List<GroupDocument>> =
+        apiCall { apiProvider.api().groupDocuments(groupId) }
+
     // --- members ------------------------------------------------------
 
     suspend fun listMembers(groupId: String): ApiResult<List<MemberResponse>> =
@@ -117,4 +137,98 @@ class DocVaultRepository(
 
     suspend fun declineInvitation(invitationId: String): ApiResult<Unit> =
         apiCall { apiProvider.api().declineInvitation(invitationId) }
+
+    // --- documents ----------------------------------------------------
+
+    suspend fun listDocuments(
+        query: String?,
+        docType: String?,
+        page: Int,
+        pageSize: Int = PAGE_SIZE,
+    ): ApiResult<DocumentPage> = apiCall {
+        apiProvider.api().listDocuments(query?.takeIf { it.isNotBlank() }, docType, page, pageSize)
+    }
+
+    /**
+     * Upload one picked file, reporting bytes sent as it goes.
+     *
+     * The file is read straight from its content Uri while sending — never
+     * copied into app storage first.
+     */
+    suspend fun uploadDocument(
+        resolver: ContentResolver,
+        file: PickedFile,
+        docType: String = "other",
+        onProgress: (sent: Long, total: Long) -> Unit,
+    ): ApiResult<DocumentSummary> {
+        val body = ProgressRequestBody(resolver, file.uri, file.mimeType, file.size, onProgress)
+        val part = MultipartBody.Part.createFormData("file", file.name, body)
+        val type = docType.toRequestBody("text/plain".toMediaType())
+        return apiCall { apiProvider.api().uploadDocument(part, type) }
+    }
+
+    suspend fun documentDetail(documentId: String): ApiResult<DocumentDetail> =
+        apiCall { apiProvider.api().documentDetail(documentId) }
+
+    suspend fun renameDocument(documentId: String, name: String): ApiResult<DocumentDetail> =
+        apiCall { apiProvider.api().updateDocument(documentId, UpdateDocumentRequest(name = name)) }
+
+    suspend fun changeDocumentType(documentId: String, docType: String): ApiResult<DocumentDetail> =
+        apiCall {
+            apiProvider.api().updateDocument(documentId, UpdateDocumentRequest(docType = docType))
+        }
+
+    suspend fun deleteDocument(documentId: String): ApiResult<Unit> =
+        apiCall { apiProvider.api().deleteDocument(documentId) }
+
+    suspend fun restoreDocument(documentId: String): ApiResult<DocumentSummary> =
+        apiCall { apiProvider.api().restoreDocument(documentId) }
+
+    suspend fun trash(): ApiResult<List<TrashItem>> = apiCall { apiProvider.api().trash() }
+
+    /**
+     * Download into a location the user picked with the system file picker.
+     *
+     * Writing to a user-chosen Uri needs no storage permission, and the file
+     * never lands in a shared folder the user did not choose.
+     */
+    suspend fun downloadDocument(
+        documentId: String,
+        resolver: ContentResolver,
+        destination: Uri,
+    ): ApiResult<Unit> =
+        when (val result = apiCall { apiProvider.api().downloadDocument(documentId) }) {
+            is ApiResult.Err -> result
+            is ApiResult.Ok -> withContext(Dispatchers.IO) {
+                runCatching {
+                    val output = resolver.openOutputStream(destination)
+                        ?: error("Couldn't open the chosen location")
+                    output.use { out -> result.value.byteStream().use { it.copyTo(out) } }
+                    ApiResult.Ok(Unit)
+                }.getOrElse { ApiResult.Err("Couldn't save the file. ${it.message.orEmpty()}") }
+            }
+        }
+
+    suspend fun addTag(documentId: String, label: String): ApiResult<List<TagDto>> =
+        apiCall { apiProvider.api().addTag(documentId, AddTagRequest(label)) }
+
+    suspend fun removeTag(documentId: String, tagId: String): ApiResult<List<TagDto>> =
+        apiCall { apiProvider.api().removeTag(documentId, tagId) }
+
+    suspend fun tagSuggestions(): ApiResult<List<String>> =
+        apiCall { apiProvider.api().tagSuggestions() }
+
+    suspend fun shareDocument(
+        documentId: String,
+        groupId: String,
+        permission: String,
+    ): ApiResult<ShareDto> =
+        apiCall { apiProvider.api().shareDocument(documentId, CreateShareRequest(groupId, permission)) }
+
+    suspend fun revokeShare(documentId: String, grantId: String): ApiResult<Unit> =
+        apiCall { apiProvider.api().revokeShare(documentId, grantId) }
+
+    companion object {
+        const val PAGE_SIZE = 50
+    }
 }

@@ -1,5 +1,6 @@
 package com.docvault.app.ui.screens.groups
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,14 +33,18 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,7 +53,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.docvault.app.data.Format
+import com.docvault.app.data.net.GroupDocument
 import com.docvault.app.data.net.MemberResponse
+import com.docvault.app.ui.components.documentIcon
 import com.docvault.app.ui.components.Countries
 import com.docvault.app.ui.components.Country
 import com.docvault.app.ui.components.PhoneNumber
@@ -68,10 +76,13 @@ const val GroupDetailScreenTestTag = "group_detail_screen"
 fun GroupDetailScreen(
     viewModel: GroupDetailViewModel,
     onBack: () -> Unit,
+    onOpenDocument: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    // Documents first, as in the prototype (screen 18).
+    var tab by rememberSaveable { mutableIntStateOf(0) }
     var confirmLeave by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
 
@@ -133,15 +144,41 @@ fun GroupDetailScreen(
                     }
 
                     item {
-                        Text(
-                            text = "MEMBERS · ${state.members.size}",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontWeight = FontWeight.SemiBold,
-                        )
+                        TabRow(selectedTabIndex = tab) {
+                            Tab(
+                                selected = tab == 0,
+                                onClick = { tab = 0 },
+                                text = { Text("Documents · ${state.documents.size}") },
+                                modifier = Modifier.testTag("tab_documents"),
+                            )
+                            Tab(
+                                selected = tab == 1,
+                                onClick = { tab = 1 },
+                                text = { Text("Members · ${state.members.size}") },
+                                modifier = Modifier.testTag("tab_members"),
+                            )
+                        }
                     }
 
-                    items(state.members, key = { it.account.id }) { member ->
+                    if (tab == 0) {
+                        if (state.documents.isEmpty()) {
+                            item {
+                                Text(
+                                    "Nothing shared with this group yet. To share, open a document " +
+                                        "in your Vault and tap Share.",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(vertical = 16.dp),
+                                )
+                            }
+                        } else {
+                            items(state.documents, key = { "doc_${it.id}" }) { document ->
+                                GroupDocumentRow(document = document, onClick = { onOpenDocument(document.id) })
+                            }
+                        }
+                    }
+
+                    if (tab == 1) items(state.members, key = { it.account.id }) { member ->
                         MemberRow(
                             member = member,
                             isMe = member.account.id == state.myAccountId,
@@ -152,7 +189,7 @@ fun GroupDetailScreen(
                         )
                     }
 
-                    item {
+                    if (tab == 1) item {
                         Spacer(Modifier.height(24.dp))
                         OutlinedButton(
                             onClick = { confirmLeave = true },
@@ -161,7 +198,7 @@ fun GroupDetailScreen(
                         ) { Text("Leave group") }
                     }
 
-                    if (state.isAdmin) {
+                    if (tab == 1 && state.isAdmin) {
                         item {
                             Spacer(Modifier.height(8.dp))
                             OutlinedButton(
@@ -214,6 +251,35 @@ fun GroupDetailScreen(
             onConfirm = { confirmDelete = false; viewModel.deleteGroup() },
             onDismiss = { confirmDelete = false },
         )
+    }
+}
+
+@Composable
+private fun GroupDocumentRow(document: GroupDocument, onClick: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).testTag("group_document_${document.id}"),
+    ) {
+        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                documentIcon(document.mimeType),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(24.dp),
+            )
+            Column(Modifier.weight(1f).padding(start = 12.dp)) {
+                Text(document.name, style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    "Shared by ${document.owner.displayName} · ${Format.permission(document.permission)}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    "${Format.bytes(document.sizeBytes)} · ${Format.date(document.sharedAt)}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
     }
 }
 
