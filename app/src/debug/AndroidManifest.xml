@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Debug-only manifest overlay. Points the app at the permissive network config
+  in src/debug/res/xml so a laptop-hosted backend on plain HTTP is reachable.
+
+  Merged into the debug APK only; the release build never sees it.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <application
+        android:networkSecurityConfig="@xml/network_security_config"
+        tools:replace="android:networkSecurityConfig" />
+
+</manifest>
