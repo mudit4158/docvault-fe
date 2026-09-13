@@ -158,6 +158,8 @@ Unit tests cover phone parsing and country handling. Instrumentation tests cover
 | "…does not have an active DocVault account" | Correct behaviour — group invites only reach registered users |
 | Cleartext HTTP blocked | Only the **debug** build permits plain HTTP (`src/debug/`). Release blocks it by design |
 | Gradle cannot find the SDK | Missing `local.properties` — see Prerequisites |
+| `INSTALL_FAILED_USER_RESTRICTED: Installation via USB is disabled` | MIUI-specific (Xiaomi/Redmi/POCO). In Developer Options, sign in to a Mi Account, turn on **USB debugging (Security settings)** (separate from plain USB debugging), then toggle **Install via USB** on. Needs Wi-Fi connected while enabling it. Click Retry in Android Studio afterward — no rebuild needed |
+| Clicking the ▶ next to an AVD in Device Manager just opens a slow emulator with nothing installed | That button only boots the emulator. To actually build + install + launch the app, select the device in the toolbar dropdown at the top and click the green ▶ Run button next to it |
 
 ---
 
