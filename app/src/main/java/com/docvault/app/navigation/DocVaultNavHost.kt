@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -27,12 +28,19 @@ import com.docvault.app.ui.screens.groups.GroupsScreen
 import com.docvault.app.ui.screens.groups.GroupsViewModel
 import com.docvault.app.ui.screens.me.MeScreen
 import com.docvault.app.ui.screens.me.MeViewModel
+import com.docvault.app.ui.screens.documents.DocumentDetailScreen
+import com.docvault.app.ui.screens.documents.DocumentDetailViewModel
+import com.docvault.app.ui.screens.documents.TrashScreen
+import com.docvault.app.ui.screens.documents.TrashViewModel
 import com.docvault.app.ui.screens.scan.ScanScreen
 import com.docvault.app.ui.screens.vault.VaultScreen
+import com.docvault.app.ui.screens.vault.VaultViewModel
 
 private const val ROUTE_AUTH = "auth"
 private const val ROUTE_MAIN = "main"
 private const val ROUTE_GROUP_DETAIL = "group/{groupId}"
+private const val ROUTE_DOCUMENT_DETAIL = "document/{documentId}"
+private const val ROUTE_TRASH = "trash"
 
 /**
  * Root navigation.
@@ -78,6 +86,8 @@ fun DocVaultNavHost(repository: DocVaultRepository) {
             MainTabs(
                 repository = repository,
                 onOpenGroup = { groupId -> rootNavController.navigate("group/$groupId") },
+                onOpenDocument = { documentId -> rootNavController.navigate("document/$documentId") },
+                onOpenTrash = { rootNavController.navigate(ROUTE_TRASH) },
                 onSignedOut = {
                     rootNavController.navigate(ROUTE_AUTH) {
                         popUpTo(ROUTE_MAIN) { inclusive = true }
@@ -99,6 +109,29 @@ fun DocVaultNavHost(repository: DocVaultRepository) {
                     factory = factoryFor { GroupDetailViewModel(repository, groupId) },
                 ),
                 onBack = { rootNavController.popBackStack() },
+                onOpenDocument = { documentId -> rootNavController.navigate("document/$documentId") },
+            )
+        }
+
+        composable(
+            route = ROUTE_DOCUMENT_DETAIL,
+            arguments = listOf(navArgument("documentId") { type = NavType.StringType }),
+        ) { backStackEntry ->
+            val documentId = backStackEntry.arguments?.getString("documentId").orEmpty()
+            val resolver = LocalContext.current.contentResolver
+            DocumentDetailScreen(
+                viewModel = viewModel(
+                    key = "document_$documentId",
+                    factory = factoryFor { DocumentDetailViewModel(repository, resolver, documentId) },
+                ),
+                onBack = { rootNavController.popBackStack() },
+            )
+        }
+
+        composable(ROUTE_TRASH) {
+            TrashScreen(
+                viewModel = viewModel(factory = factoryFor { TrashViewModel(repository) }),
+                onBack = { rootNavController.popBackStack() },
             )
         }
     }
@@ -109,8 +142,11 @@ fun DocVaultNavHost(repository: DocVaultRepository) {
 private fun MainTabs(
     repository: DocVaultRepository,
     onOpenGroup: (String) -> Unit,
+    onOpenDocument: (String) -> Unit,
+    onOpenTrash: () -> Unit,
     onSignedOut: () -> Unit,
 ) {
+    val resolver = LocalContext.current.contentResolver
     val navController = rememberNavController()
     val currentRoute = navController.currentBackStackEntryAsState().value
         ?.destination
@@ -142,7 +178,13 @@ private fun MainTabs(
             startDestination = DocVaultDestination.Vault.route,
             modifier = Modifier.padding(innerPadding),
         ) {
-            composable(DocVaultDestination.Vault.route) { VaultScreen() }
+            composable(DocVaultDestination.Vault.route) {
+                VaultScreen(
+                    viewModel = viewModel(factory = factoryFor { VaultViewModel(repository, resolver) }),
+                    onOpenDocument = onOpenDocument,
+                    onOpenTrash = onOpenTrash,
+                )
+            }
             composable(DocVaultDestination.Scan.route) { ScanScreen() }
             composable(DocVaultDestination.Groups.route) {
                 GroupsScreen(

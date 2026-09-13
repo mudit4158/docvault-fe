@@ -9,21 +9,26 @@ minSdk 26 / targetSdk 34 / compileSdk 34
 
 ## Current State — Read This First
 
-**Auth and Groups are built and talking to the real backend. Vault and Scan are still placeholders.**
+**Auth, Groups, Vault and Sharing are built and talking to the real backend. Scan is still a placeholder.**
 
 | Area | State |
 |---|---|
-| Networking (Retrofit + OkHttp + kotlinx.serialization) | ✅ Built |
-| DI graph (`AppContainer`, hand-wired) | ✅ Built |
-| Token persistence (EncryptedSharedPreferences) | ✅ Built |
-| Register / sign in / sign out | ✅ Built |
-| Me tab — profile, upload allowance | ✅ Built |
-| Groups — list, create, detail, members | ✅ Built |
-| Invitations — list, accept, decline | ✅ Built |
-| Member management — remove, leave, transfer admin | ✅ Built |
-| Vault tab | ⬜ Placeholder — needs backend `document_management` |
-| Scan tab | ⬜ Placeholder — needs backend `document_management` |
-| Offline cache | ⬜ Not built |
+| Networking (Retrofit + OkHttp + kotlinx.serialization) | âœ… Built |
+| DI graph (`AppContainer`, hand-wired) | âœ… Built |
+| Token persistence (EncryptedSharedPreferences) | âœ… Built |
+| Register / sign in / sign out | âœ… Built |
+| Me tab â€” profile, upload allowance | âœ… Built |
+| Groups â€” list, create, detail, members | âœ… Built |
+| Invitations â€” list, accept, decline | âœ… Built |
+| Member management â€” remove, leave, transfer admin | âœ… Built |
+| Vault tab — list, search, type filter, upload with progress/retry, quota banner | ✅ Built (`ui/screens/vault/`) |
+| Document detail — download, rename, type, tags, share sheet, move to trash + undo | ✅ Built (`ui/screens/documents/`) |
+| Trash + restore | ✅ Built |
+| Group Documents tab | ✅ Built |
+| In-app preview with screenshots blocked (`FLAG_SECURE`) | ⬜ Pending — tracker #63 |
+| Access-log viewer | ⬜ Pending — tracker #66 |
+| Scan tab | ⬜ Placeholder — deliberately not built yet (Q10) |
+| Offline cache | â¬œ Not built |
 
 **To run it against a local backend, see [`README.md`](README.md)** — including the
 Troubleshooting table for device-specific install issues (e.g. MIUI/Xiaomi phones blocking
