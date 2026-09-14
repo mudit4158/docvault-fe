@@ -33,6 +33,8 @@ import com.docvault.app.ui.screens.documents.DocumentDetailViewModel
 import com.docvault.app.ui.screens.documents.TrashScreen
 import com.docvault.app.ui.screens.documents.TrashViewModel
 import com.docvault.app.ui.screens.scan.ScanScreen
+import com.docvault.app.ui.screens.scan.ScanViewModel
+import com.docvault.app.ui.screens.scan.data.ScanCacheStore
 import com.docvault.app.ui.screens.vault.VaultScreen
 import com.docvault.app.ui.screens.vault.VaultViewModel
 
@@ -41,6 +43,7 @@ private const val ROUTE_MAIN = "main"
 private const val ROUTE_GROUP_DETAIL = "group/{groupId}"
 private const val ROUTE_DOCUMENT_DETAIL = "document/{documentId}"
 private const val ROUTE_TRASH = "trash"
+private const val ROUTE_SCAN = "scan"
 
 /**
  * Root navigation.
@@ -48,9 +51,14 @@ private const val ROUTE_TRASH = "trash"
  * Two graphs: an unauthenticated one holding only the sign-in screen, and the
  * tabbed app. The start destination is chosen from whether a token is already
  * stored, so a returning user lands straight in the vault.
+ *
+ * Scan is a root-level route, not one of [MainTabs]' inner destinations — its
+ * own placeholder KDoc always said it should be "a full-screen modal flow
+ * outside the tab bar" (engineering handoff §1), matching how it escapes the
+ * bottom bar entirely rather than swapping in inside the tab Scaffold.
  */
 @Composable
-fun DocVaultNavHost(repository: DocVaultRepository) {
+fun DocVaultNavHost(repository: DocVaultRepository, scanCacheStore: ScanCacheStore) {
     val rootNavController = rememberNavController()
 
     // A rejected token means the session is over — 60-minute expiry makes this
@@ -88,11 +96,24 @@ fun DocVaultNavHost(repository: DocVaultRepository) {
                 onOpenGroup = { groupId -> rootNavController.navigate("group/$groupId") },
                 onOpenDocument = { documentId -> rootNavController.navigate("document/$documentId") },
                 onOpenTrash = { rootNavController.navigate(ROUTE_TRASH) },
+                onOpenScan = { rootNavController.navigate(ROUTE_SCAN) },
                 onSignedOut = {
                     rootNavController.navigate(ROUTE_AUTH) {
                         popUpTo(ROUTE_MAIN) { inclusive = true }
                     }
                 },
+            )
+        }
+
+        composable(ROUTE_SCAN) {
+            val resolver = LocalContext.current.contentResolver
+            // No explicit key: each visit to this route is a fresh push (never
+            // saveState/restoreState'd like the bottom tabs are), so this is
+            // already a brand-new backstack entry with its own ViewModelStore
+            // — a fresh scan session every time, never a reused one.
+            ScanScreen(
+                viewModel = viewModel(factory = factoryFor { ScanViewModel(repository, resolver, scanCacheStore) }),
+                onFinished = { rootNavController.popBackStack() },
             )
         }
 
@@ -137,13 +158,14 @@ fun DocVaultNavHost(repository: DocVaultRepository) {
     }
 }
 
-/** The four bottom-nav tabs. */
+/** The four bottom-nav tabs. Scan is not one of this NavHost's destinations — see [onOpenScan]. */
 @Composable
 private fun MainTabs(
     repository: DocVaultRepository,
     onOpenGroup: (String) -> Unit,
     onOpenDocument: (String) -> Unit,
     onOpenTrash: () -> Unit,
+    onOpenScan: () -> Unit,
     onSignedOut: () -> Unit,
 ) {
     val resolver = LocalContext.current.contentResolver
@@ -160,14 +182,21 @@ private fun MainTabs(
             DocVaultBottomBar(
                 currentDestination = currentDestination,
                 onDestinationSelected = { destination ->
-                    navController.navigate(destination.route) {
-                        // Single copy of each tab on the back stack, state preserved across
-                        // tab switches (standard bottom-nav pattern).
-                        popUpTo(navController.graph.findStartDestination().id) {
-                            saveState = true
+                    if (destination == DocVaultDestination.Scan) {
+                        // Scan is a full-screen modal outside the tab shell, not
+                        // an inner destination — escape to the root nav host
+                        // instead of navigating this Scaffold's own NavHost.
+                        onOpenScan()
+                    } else {
+                        navController.navigate(destination.route) {
+                            // Single copy of each tab on the back stack, state preserved across
+                            // tab switches (standard bottom-nav pattern).
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
                         }
-                        launchSingleTop = true
-                        restoreState = true
                     }
                 },
             )
@@ -185,7 +214,6 @@ private fun MainTabs(
                     onOpenTrash = onOpenTrash,
                 )
             }
-            composable(DocVaultDestination.Scan.route) { ScanScreen() }
             composable(DocVaultDestination.Groups.route) {
                 GroupsScreen(
                     viewModel = viewModel(factory = factoryFor { GroupsViewModel(repository) }),

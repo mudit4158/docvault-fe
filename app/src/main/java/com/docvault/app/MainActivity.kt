@@ -16,7 +16,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             DocVaultTheme {
-                DocVaultNavHost(repository = container.repository)
+                DocVaultNavHost(repository = container.repository, scanCacheStore = container.scanCacheStore)
             }
         }
     }

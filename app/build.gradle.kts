@@ -60,6 +60,12 @@ android {
         compose = true
         buildConfig = true
     }
+
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
+    }
 }
 
 dependencies {
@@ -86,7 +92,19 @@ dependencies {
     // Bearer token at rest
     implementation(libs.androidx.security.crypto)
 
+    // Scan: capture + edge detection + crop UI + multi-page + gallery import,
+    // all in one Google-maintained flow (see docvault-be's scan_to_pdf.md —
+    // either capture approach uploads through the same endpoint, so this
+    // choice has no backend impact).
+    implementation(libs.play.services.mlkit.document.scanner)
+    // Downsampled, cached thumbnail loading for the page reorder strip and the
+    // zoom-inspect canvas — no image-loading infra existed before Scan.
+    implementation(libs.coil.compose)
+
     testImplementation(libs.junit)
+    // Lets PageTransforms' real Bitmap/Canvas/ColorMatrix operations run on
+    // the JVM without a device.
+    testImplementation(libs.robolectric)
 
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.test.ext.junit)

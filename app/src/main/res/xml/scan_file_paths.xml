@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Only the scan export subfolder of the app-private cache is exposed via
+    FileProvider — nothing else in app storage is reachable through it.
+-->
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <cache-path name="scan_export" path="scan/" />
+</paths>

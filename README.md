@@ -131,6 +131,10 @@ One APK works on both targets — the address is stored on the device, not compi
 3. **Invite** — open the group, tap the person-add icon. Choose from contacts or type a number. Invitations only reach people who **already have** a DocVault account, so register a second account first (sign out from the Me tab).
 4. **Accept / decline** — sign in as the invitee; pending invitations sit at the top of the Groups tab.
 5. **Manage** — make someone admin, remove them, leave, or delete the group.
+6. **Scan** — tap the Scan tab. It opens Google's document scanner (needs Play Services and, on
+   first use only, connectivity to fetch the scanner module). Capture a page or two, try rotate/
+   brightness/contrast/B&W on the edit screen, reorder or delete a page in review, then Save —
+   it lands in the Vault tab like any other upload, since Scan uploads through the same endpoint.
 
 Every action hits the real backend; watch the uvicorn console to see the requests.
 
@@ -143,7 +147,7 @@ Every action hits the real backend; watch the uvicorn console to see the request
 ./gradlew :app:connectedAndroidTest   # instrumentation — needs a running emulator/device
 ```
 
-Unit tests cover phone parsing and country handling. Instrumentation tests cover the auth gate and local validation; signed-in flows need a `DocVaultRepository` test double, which is not built yet.
+Unit tests cover phone parsing/country handling, upload file-type/size rules, scan page-transform arithmetic, and scan page list ops (reorder/delete/format-choice). Instrumentation tests cover the auth gate and local validation, the scan FileProvider round-trip, and a PDF-assembly size regression check; broader signed-in flows still need a `DocVaultRepository` test double, which is not built yet.
 
 ---
 
@@ -160,6 +164,7 @@ Unit tests cover phone parsing and country handling. Instrumentation tests cover
 | Gradle cannot find the SDK | Missing `local.properties` — see Prerequisites |
 | `INSTALL_FAILED_USER_RESTRICTED: Installation via USB is disabled` | MIUI-specific (Xiaomi/Redmi/POCO). In Developer Options, sign in to a Mi Account, turn on **USB debugging (Security settings)** (separate from plain USB debugging), then toggle **Install via USB** on. Needs Wi-Fi connected while enabling it. Click Retry in Android Studio afterward — no rebuild needed |
 | Clicking the ▶ next to an AVD in Device Manager just opens a slow emulator with nothing installed | That button only boots the emulator. To actually build + install + launch the app, select the device in the toolbar dropdown at the top and click the green ▶ Run button next to it |
+| Scan tab fails to open, or hangs on first tap | Needs Google Play Services; an AVD without the Play Store image won't have it. The scanner module is fetched on first use and needs connectivity once — a fully offline first launch will fail |
 
 ---
 
@@ -175,8 +180,8 @@ app/src/main/java/com/docvault/app/
 ├── data/                    # TokenStore, ApiCall, DocVaultRepository, net/
 ├── navigation/              # DocVaultDestination (tab enum) + DocVaultNavHost
 ├── ui/theme/                # dark-first Material 3 theme
-├── ui/components/           # shared composables — bottom bar, PhoneNumberField, contacts picker
-└── ui/screens/<feature>/    # auth, groups, me built; vault, scan placeholders
+├── ui/components/           # shared composables — bottom bar, PhoneNumberField, contacts picker, SecureScreen
+└── ui/screens/<feature>/    # auth, groups, me, vault, scan built
 ```
 
 Each feature owns its package under `ui/screens/`. As one grows past a single composable, add `viewmodel/` or `data/` under that feature rather than growing the shell.
@@ -189,8 +194,8 @@ Each feature owns its package under `ui/screens/`. As one grows past a single co
 | Groups — list, create, detail, members | ✅ |
 | Invitations — invite (contacts or manual), accept, decline | ✅ |
 | Members — remove, leave, transfer admin | ✅ |
-| Vault tab | ⬜ Needs backend `document_management` |
-| Scan tab | ⬜ Needs backend `document_management` |
+| Vault tab | ✅ |
+| Scan tab | ✅ |
 | Offline cache | ⬜ |
 
 ## Notes

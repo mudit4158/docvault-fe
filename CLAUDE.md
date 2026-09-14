@@ -9,26 +9,26 @@ minSdk 26 / targetSdk 34 / compileSdk 34
 
 ## Current State — Read This First
 
-**Auth, Groups, Vault and Sharing are built and talking to the real backend. Scan is still a placeholder.**
+**Auth, Groups, Vault, Sharing and Scan are built and talking to the real backend.**
 
 | Area | State |
 |---|---|
-| Networking (Retrofit + OkHttp + kotlinx.serialization) | âœ… Built |
-| DI graph (`AppContainer`, hand-wired) | âœ… Built |
-| Token persistence (EncryptedSharedPreferences) | âœ… Built |
-| Register / sign in / sign out | âœ… Built |
-| Me tab â€” profile, upload allowance | âœ… Built |
-| Groups â€” list, create, detail, members | âœ… Built |
-| Invitations â€” list, accept, decline | âœ… Built |
-| Member management â€” remove, leave, transfer admin | âœ… Built |
+| Networking (Retrofit + OkHttp + kotlinx.serialization) | ✅ Built |
+| DI graph (`AppContainer`, hand-wired) | ✅ Built |
+| Token persistence (EncryptedSharedPreferences) | ✅ Built |
+| Register / sign in / sign out | ✅ Built |
+| Me tab — profile, upload allowance | ✅ Built |
+| Groups — list, create, detail, members | ✅ Built |
+| Invitations — list, accept, decline | ✅ Built |
+| Member management — remove, leave, transfer admin | ✅ Built |
 | Vault tab — list, search, type filter, upload with progress/retry, quota banner | ✅ Built (`ui/screens/vault/`) |
 | Document detail — download, rename, type, tags, share sheet, move to trash + undo | ✅ Built (`ui/screens/documents/`) |
 | Trash + restore | ✅ Built |
 | Group Documents tab | ✅ Built |
-| In-app preview with screenshots blocked (`FLAG_SECURE`) | ⬜ Pending — tracker #63 |
+| Scan tab — capture (ML Kit Document Scanner: boundary detect + crop + gallery import), zoom-inspect, rotate/brightness/contrast/B&W, delete/retake/reorder pages, PDF (multi-page) or PDF/Image choice (single page), save via the existing `uploadDocument` path | ✅ Built (`ui/screens/scan/`) — no backend changes; uploads through the same `POST /documents` Vault already uses |
+| In-app preview with screenshots blocked (`FLAG_SECURE`) | ⬜ Pending — tracker #63. Scan reuses the same `SecureScreen` component for its own flow now (`ui/components/SecureScreen.kt`) |
 | Access-log viewer | ⬜ Pending — tracker #66 |
-| Scan tab | ⬜ Placeholder — deliberately not built yet (Q10) |
-| Offline cache | â¬œ Not built |
+| Offline cache | ⬜ Not built |
 
 **To run it against a local backend, see [`README.md`](README.md)** — including the
 Troubleshooting table for device-specific install issues (e.g. MIUI/Xiaomi phones blocking
@@ -56,10 +56,14 @@ com.docvault.app/
 │       └── ApiProvider.kt      # AuthInterceptor + Retrofit construction
 ├── navigation/
 │   ├── DocVaultDestination.kt  # enum: route, label, icon for each of the 4 tabs
-│   └── DocVaultNavHost.kt      # auth gate + tab graph
+│   └── DocVaultNavHost.kt      # auth gate + tab graph + root-level Scan modal route
 ├── ui/theme/                   # Color.kt, Type.kt, Theme.kt
-├── ui/components/              # shared composables (DocVaultBottomBar)
-└── ui/screens/<feature>/       # auth/, groups/, me/ built; vault/, scan/ placeholders
+├── ui/components/              # shared composables (DocVaultBottomBar, SecureScreen)
+└── ui/screens/<feature>/       # auth/, groups/, me/, vault/, scan/ built
+    └── scan/
+        ├── ScanScreen.kt, ScanNavHost.kt, ScanViewModel.kt, ScanPageOps.kt
+        ├── PageEditScreen.kt, ReviewScreen.kt
+        └── data/               # DocumentScannerLauncher, ScanCacheStore, PageTransforms, PdfAssembler, ScanSpec
 ```
 
 ## Architecture Notes
@@ -94,8 +98,10 @@ the corresponding backend endpoints in `docvault-be`) in this order:
    screen backed by Android Keystore.
 2. **Vault/Upload** — file picker, per-file upload progress, retry, list/grid toggle, search +
    filter, rate-limit (10/day) and size-cap (20 MB) blocked states.
-3. **Scan** — camera capture with edge detection, multi-page session, page edit (reorder, crop,
-   rotate, brightness/contrast, B&W filter), draft-until-save semantics.
+3. **Scan** ✅ — camera capture with boundary detection + crop (ML Kit Document Scanner), gallery
+   import, multi-page session, page edit (zoom-inspect, rotate, brightness/contrast, B&W filter,
+   delete/retake/reorder), draft-until-save semantics, PDF (multi-page) or PDF/Image choice
+   (single page). No backend changes — uploads through the existing `POST /documents`.
 4. **Groups & Invites** — create group, invite/accept/decline, 20-member cap, admin transfer.
 5. **Sharing** — per-group view/download permission grants, revoke, access-log viewer.
 
@@ -152,6 +158,17 @@ assuming a single author when writing commit messages or attributing work.
   to include.
 - **State survives tab switches.** The bottom-nav `popUpTo`/`saveState`/`restoreState` pattern in
   `DocVaultNavHost` is deliberate — keep it when adding new top-level destinations.
+- **Scan is the deliberate exception to the bottom-tab shell.** Tapping the Scan tab does not
+  navigate `MainTabs`' inner `NavHost` — `DocVaultBottomBar`'s `onDestinationSelected` special-cases
+  it to call `onOpenScan()`, which pushes a root-level `"scan"` route outside the tab `Scaffold`
+  entirely, matching the original placeholder's own KDoc ("a full-screen modal flow outside the
+  tab bar"). A fresh `ScanViewModel` (and cache session) is created every time — never
+  `saveState`/`restoreState`'d like Vault/Groups/Me are.
+- **Scan's capture UI is Google's ML Kit Document Scanner** (`play-services-mlkit-document-scanner`),
+  not hand-rolled CameraX + edge detection — see `ui/screens/scan/data/DocumentScannerLauncher.kt`.
+  Boundary detection, crop, multi-page sessions and gallery import all come from that one
+  Google-maintained flow; rotate/brightness/contrast/B&W are a custom screen layered after it
+  (`PageEditScreen.kt`), since ML Kit's own UI doesn't support those.
 
 ## Backend Integration
 
