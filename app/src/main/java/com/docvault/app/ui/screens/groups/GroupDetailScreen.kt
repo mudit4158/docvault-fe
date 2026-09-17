@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Contacts
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.AlertDialog
@@ -85,6 +86,7 @@ fun GroupDetailScreen(
     var tab by rememberSaveable { mutableIntStateOf(0) }
     var confirmLeave by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
+    var renaming by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.message, state.error) {
         val text = state.message ?: state.error
@@ -111,6 +113,12 @@ fun GroupDetailScreen(
                 },
                 actions = {
                     if (state.isAdmin) {
+                        IconButton(
+                            onClick = { renaming = true },
+                            modifier = Modifier.testTag("rename_group_button"),
+                        ) {
+                            Icon(Icons.Filled.Edit, contentDescription = "Rename group")
+                        }
                         IconButton(
                             onClick = { viewModel.showInviteDialog(true) },
                             modifier = Modifier.testTag("invite_button"),
@@ -219,6 +227,21 @@ fun GroupDetailScreen(
                     }
                 }
             }
+        }
+    }
+
+    if (renaming) {
+        state.group?.let { group ->
+            RenameGroupDialog(
+                currentName = group.name,
+                currentDescription = group.description.orEmpty(),
+                isSubmitting = state.isSubmitting,
+                onDismiss = { renaming = false },
+                onConfirm = { name, description ->
+                    renaming = false
+                    viewModel.rename(name, description)
+                },
+            )
         }
     }
 
@@ -471,6 +494,52 @@ private fun InviteLookupStatus(lookup: LookupState) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
+}
+
+/** Admin-only. Name is required (same rule as creating a group); description is optional. */
+@Composable
+private fun RenameGroupDialog(
+    currentName: String,
+    currentDescription: String,
+    isSubmitting: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: (name: String, description: String?) -> Unit,
+) {
+    var name by remember { mutableStateOf(currentName) }
+    var description by remember { mutableStateOf(currentDescription) }
+
+    AlertDialog(
+        onDismissRequest = { if (!isSubmitting) onDismiss() },
+        title = { Text("Rename group") },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Name") },
+                    singleLine = true,
+                    enabled = !isSubmitting,
+                    modifier = Modifier.fillMaxWidth().testTag("rename_group_name"),
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = { description = it },
+                    label = { Text("Description (optional)") },
+                    enabled = !isSubmitting,
+                    modifier = Modifier.fillMaxWidth().testTag("rename_group_description"),
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onConfirm(name.trim(), description.trim()) },
+                enabled = !isSubmitting && name.isNotBlank(),
+                modifier = Modifier.testTag("rename_group_confirm"),
+            ) { Text("Save") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss, enabled = !isSubmitting) { Text("Cancel") } },
+    )
 }
 
 @Composable

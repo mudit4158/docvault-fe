@@ -21,10 +21,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.RestoreFromTrash
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Upload
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -47,7 +50,9 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -77,10 +82,12 @@ fun VaultScreen(
     viewModel: VaultViewModel,
     onOpenDocument: (String) -> Unit,
     onOpenTrash: () -> Unit,
+    onSignOut: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    var confirmingSignOut by remember { mutableStateOf(false) }
 
     // System picker: returns only the files chosen, so no storage permission.
     val pickFiles = rememberLauncherForActivityResult(
@@ -113,6 +120,12 @@ fun VaultScreen(
                         // exists specifically to signal "still recoverable" (10-day
                         // retention window), which a generic delete icon doesn't.
                         Icon(Icons.Filled.RestoreFromTrash, contentDescription = "Trash (restorable for 10 days)")
+                    }
+                    IconButton(
+                        onClick = { confirmingSignOut = true },
+                        modifier = Modifier.testTag("vault_sign_out"),
+                    ) {
+                        Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Sign out")
                     }
                 },
             )
@@ -211,6 +224,17 @@ fun VaultScreen(
                 }
             }
         }
+    }
+
+    if (confirmingSignOut) {
+        AlertDialog(
+            onDismissRequest = { confirmingSignOut = false },
+            title = { Text("Sign out?") },
+            confirmButton = {
+                Button(onClick = { confirmingSignOut = false; onSignOut() }) { Text("Sign out") }
+            },
+            dismissButton = { TextButton(onClick = { confirmingSignOut = false }) { Text("Cancel") } },
+        )
     }
 }
 

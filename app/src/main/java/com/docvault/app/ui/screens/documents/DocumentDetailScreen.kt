@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
@@ -84,14 +85,16 @@ const val DocumentDetailScreenTestTag = "document_detail_screen"
  * if allowed, a download button. The server decides what each person gets —
  * the screen only hides controls that would be refused anyway.
  *
- * In-app preview is not built yet (tracker). When it is, it must run with
- * screenshots blocked.
+ * In-app preview screenshots are blocked app-wide (`SecureScreen()` in
+ * `DocVaultNavHost`), so the preview route itself needs nothing extra for
+ * that.
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun DocumentDetailScreen(
     viewModel: DocumentDetailViewModel,
     onBack: () -> Unit,
+    onOpenPreview: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -208,6 +211,17 @@ fun DocumentDetailScreen(
                 ) {
                     Header(detail)
                     Spacer(Modifier.height(16.dp))
+
+                    OutlinedButton(
+                        onClick = { onOpenPreview(detail.id) },
+                        enabled = !state.isBusy,
+                        modifier = Modifier.fillMaxWidth().testTag("view_button"),
+                    ) {
+                        Icon(Icons.Filled.Visibility, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("View")
+                    }
+                    Spacer(Modifier.height(8.dp))
 
                     if (detail.canDownload) {
                         Button(

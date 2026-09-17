@@ -35,6 +35,8 @@ import com.docvault.app.ui.screens.me.MeScreen
 import com.docvault.app.ui.screens.me.MeViewModel
 import com.docvault.app.ui.screens.documents.DocumentDetailScreen
 import com.docvault.app.ui.screens.documents.DocumentDetailViewModel
+import com.docvault.app.ui.screens.documents.PreviewScreen
+import com.docvault.app.ui.screens.documents.PreviewViewModel
 import com.docvault.app.ui.screens.documents.TrashScreen
 import com.docvault.app.ui.screens.documents.TrashViewModel
 import com.docvault.app.ui.screens.scan.ScanScreen
@@ -47,6 +49,7 @@ private const val ROUTE_AUTH = "auth"
 private const val ROUTE_MAIN = "main"
 private const val ROUTE_GROUP_DETAIL = "group/{groupId}"
 private const val ROUTE_DOCUMENT_DETAIL = "document/{documentId}"
+private const val ROUTE_DOCUMENT_PREVIEW = "document/{documentId}/preview"
 private const val ROUTE_TRASH = "trash"
 private const val ROUTE_SCAN = "scan"
 private const val ROUTE_OTP_LOGIN = "otp_login"
@@ -190,6 +193,22 @@ fun DocVaultNavHost(repository: DocVaultRepository, scanCacheStore: ScanCacheSto
                     factory = factoryFor { DocumentDetailViewModel(repository, resolver, documentId) },
                 ),
                 onBack = { rootNavController.popBackStack() },
+                onOpenPreview = { id -> rootNavController.navigate("document/$id/preview") },
+            )
+        }
+
+        composable(
+            route = ROUTE_DOCUMENT_PREVIEW,
+            arguments = listOf(navArgument("documentId") { type = NavType.StringType }),
+        ) { backStackEntry ->
+            val documentId = backStackEntry.arguments?.getString("documentId").orEmpty()
+            val cacheDir = LocalContext.current.cacheDir
+            PreviewScreen(
+                viewModel = viewModel(
+                    key = "preview_$documentId",
+                    factory = factoryFor { PreviewViewModel(repository, cacheDir, documentId) },
+                ),
+                onBack = { rootNavController.popBackStack() },
             )
         }
 
@@ -256,6 +275,7 @@ private fun MainTabs(
                     viewModel = viewModel(factory = factoryFor { VaultViewModel(repository, resolver) }),
                     onOpenDocument = onOpenDocument,
                     onOpenTrash = onOpenTrash,
+                    onSignOut = { repository.signOut(); onSignedOut() },
                 )
             }
             composable(DocVaultDestination.Groups.route) {

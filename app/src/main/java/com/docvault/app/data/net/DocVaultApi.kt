@@ -163,6 +163,17 @@ interface DocVaultApi {
     @GET("api/v1/documents/{id}/download")
     suspend fun downloadDocument(@Path("id") documentId: String): Response<ResponseBody>
 
+    /**
+     * Same bytes as [downloadDocument], for in-app viewing only.
+     *
+     * The server allows this to a `view`-only member too — that permission
+     * tier exists precisely so they can look without a saved copy, and
+     * [downloadDocument] 403s them.
+     */
+    @Streaming
+    @GET("api/v1/documents/{id}/preview")
+    suspend fun previewDocument(@Path("id") documentId: String): Response<ResponseBody>
+
     @POST("api/v1/documents/{id}/tags")
     suspend fun addTag(
         @Path("id") documentId: String,

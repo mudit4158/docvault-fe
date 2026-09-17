@@ -182,6 +182,17 @@ class GroupDetailViewModel(
             repository.transferAdmin(groupId, member.account.id)
         }
 
+    fun rename(name: String, description: String?) {
+        viewModelScope.launch {
+            _state.update { it.copy(isSubmitting = true, error = null) }
+            when (val result = repository.renameGroup(groupId, name, description)) {
+                is ApiResult.Ok ->
+                    _state.update { it.copy(isSubmitting = false, group = result.value, message = "Renamed") }
+                is ApiResult.Err -> _state.update { it.copy(isSubmitting = false, error = result.message) }
+            }
+        }
+    }
+
     fun leaveGroup() = act("You left the group", closesGroup = true) {
         repository.leaveGroup(groupId)
     }

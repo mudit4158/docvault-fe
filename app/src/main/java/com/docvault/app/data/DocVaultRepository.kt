@@ -27,6 +27,7 @@ import com.docvault.app.data.net.TagDto
 import com.docvault.app.data.net.TransferAdminRequest
 import com.docvault.app.data.net.TrashItem
 import com.docvault.app.data.net.UpdateDocumentRequest
+import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
@@ -132,6 +133,15 @@ class DocVaultRepository(
     suspend fun getGroup(groupId: String): ApiResult<GroupResponse> =
         apiCall { apiProvider.api().getGroup(groupId) }
 
+    /** Admin only — the server enforces that; this just calls the same PATCH the create form would. */
+    suspend fun renameGroup(groupId: String, name: String, description: String?): ApiResult<GroupResponse> =
+        apiCall {
+            apiProvider.api().updateGroup(
+                groupId,
+                CreateGroupRequest(name, description?.takeIf { it.isNotBlank() }),
+            )
+        }
+
     suspend fun deleteGroup(groupId: String): ApiResult<Unit> =
         apiCall { apiProvider.api().deleteGroup(groupId) }
 
@@ -234,6 +244,24 @@ class DocVaultRepository(
                     output.use { out -> result.value.byteStream().use { it.copyTo(out) } }
                     ApiResult.Ok(Unit)
                 }.getOrElse { ApiResult.Err("Couldn't save the file. ${it.message.orEmpty()}") }
+            }
+        }
+
+    /**
+     * Fetch the same bytes as [downloadDocument], for in-app viewing only.
+     *
+     * Written to an app-private cache [destination] — never a user-chosen
+     * Uri — since this is never meant to leave the app as a saved file. The
+     * caller deletes it when the preview closes.
+     */
+    suspend fun previewDocument(documentId: String, destination: File): ApiResult<Unit> =
+        when (val result = apiCall { apiProvider.api().previewDocument(documentId) }) {
+            is ApiResult.Err -> result
+            is ApiResult.Ok -> withContext(Dispatchers.IO) {
+                runCatching {
+                    destination.outputStream().use { out -> result.value.byteStream().use { it.copyTo(out) } }
+                    ApiResult.Ok(Unit)
+                }.getOrElse { ApiResult.Err("Couldn't load the preview. ${it.message.orEmpty()}") }
             }
         }
 

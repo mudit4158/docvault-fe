@@ -28,7 +28,7 @@ minSdk 26 / targetSdk 34 / compileSdk 34
 | Group Documents tab | ✅ Built |
 | Scan tab — capture (ML Kit Document Scanner: boundary detect + crop + gallery import), zoom-inspect, rotate/brightness/contrast/B&W, delete/retake/reorder pages, PDF (multi-page) or PDF/Image choice (single page), save via the existing `uploadDocument` path | ✅ Built (`ui/screens/scan/`) — no backend changes; uploads through the same `POST /documents` Vault already uses |
 | Screenshots blocked (`FLAG_SECURE`) app-wide once signed in | ✅ Built — one `SecureScreen()` call in `DocVaultNavHost`, not per-screen (see Architecture Notes) |
-| In-app preview with screenshots blocked | ⬜ Pending — tracker #63 (covered app-wide by the above regardless) |
+| In-app preview with screenshots blocked | ✅ Built (`ui/screens/documents/PreviewScreen.kt`/`PreviewViewModel.kt`) — images via Coil, PDFs paged via the platform `PdfRenderer`; screenshots already blocked app-wide |
 | Access-log viewer | ⬜ Pending — tracker #66 |
 | Offline cache | ⬜ Not built |
 
