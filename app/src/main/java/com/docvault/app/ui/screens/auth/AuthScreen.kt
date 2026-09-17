@@ -37,6 +37,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.docvault.app.BuildConfig
 import com.docvault.app.ui.components.PhoneNumberField
 import com.docvault.app.ui.theme.docVaultTextFieldColors
 
@@ -174,28 +175,34 @@ fun AuthScreen(
                 ) { Text("Forgot password?") }
             }
 
-            Spacer(Modifier.height(8.dp))
-            TextButton(onClick = viewModel::toggleServerField) {
-                Text(if (state.showServerField) "Hide server settings" else "Server settings")
-            }
+            // Debug-only: a release build ships with the production URL
+            // baked in (see app/build.gradle.kts's docvaultApiUrl), and a
+            // real tester has no reason to ever see or touch this — it was
+            // never meant to be "a pre-requisite to use the app."
+            if (BuildConfig.DEBUG) {
+                Spacer(Modifier.height(8.dp))
+                TextButton(onClick = viewModel::toggleServerField) {
+                    Text(if (state.showServerField) "Hide server settings" else "Server settings")
+                }
 
-            if (state.showServerField) {
-                OutlinedTextField(
-                    value = state.serverUrl,
-                    onValueChange = viewModel::onServerUrlChange,
-                    label = { Text("Server address") },
-                    colors = docVaultTextFieldColors(),
-                    supportingText = {
-                        Text("Emulator: http://10.0.2.2:8000  ·  Phone: your laptop's IP")
-                    },
-                    singleLine = true,
-                    enabled = !state.isBusy,
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Uri,
-                        imeAction = ImeAction.Done,
-                    ),
-                    modifier = Modifier.fillMaxWidth().testTag("auth_server"),
-                )
+                if (state.showServerField) {
+                    OutlinedTextField(
+                        value = state.serverUrl,
+                        onValueChange = viewModel::onServerUrlChange,
+                        label = { Text("Server address") },
+                        colors = docVaultTextFieldColors(),
+                        supportingText = {
+                            Text("Emulator: http://10.0.2.2:8000  ·  Phone: your laptop's IP")
+                        },
+                        singleLine = true,
+                        enabled = !state.isBusy,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Uri,
+                            imeAction = ImeAction.Done,
+                        ),
+                        modifier = Modifier.fillMaxWidth().testTag("auth_server"),
+                    )
+                }
             }
 
             state.error?.let { message ->

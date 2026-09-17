@@ -1,8 +1,22 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
+}
+
+// Release signing. keystore.properties (and the .jks it points at) are
+// gitignored — never committed. Absent entirely for anyone who hasn't been
+// handed the real keystore: assembleDebug still works either way, and
+// assembleRelease fails loudly (missing signingConfig) rather than silently
+// producing an unsigned APK.
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = Properties().apply {
+    if (keystorePropertiesFile.exists()) {
+        keystorePropertiesFile.inputStream().use { load(it) }
+    }
 }
 
 // The google-services plugin FAILS THE BUILD if google-services.json is
@@ -14,6 +28,13 @@ plugins {
 // "code ready, not yet live" shape.
 if (file("google-services.json").exists()) {
     apply(plugin = "com.google.gms.google-services")
+    // Needs the same Firebase app config google-services.json provides.
+    // Configured no further here — actually running
+    // `./gradlew assembleRelease appDistributionUploadRelease` needs a
+    // tester group created in the Firebase console and either a
+    // service-account key or `firebase login:ci` set up on whatever
+    // machine runs it, done at actual distribution time.
+    apply(plugin = "com.google.firebase.appdistribution")
 }
 
 // Where the app looks for the backend by default.
@@ -38,11 +59,22 @@ android {
         minSdk = 26
         targetSdk = 34
         versionCode = 1
-        versionName = "0.1.0"
+        versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "DEFAULT_API_BASE_URL", "\"$defaultApiUrl\"")
+    }
+
+    signingConfigs {
+        if (keystorePropertiesFile.exists()) {
+            create("release") {
+                storeFile = rootProject.file(keystoreProperties["storeFile"] as String)
+                storePassword = keystoreProperties["storePassword"] as String
+                keyAlias = keystoreProperties["keyAlias"] as String
+                keyPassword = keystoreProperties["keyPassword"] as String
+            }
+        }
     }
 
     buildTypes {
@@ -52,6 +84,12 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            if (keystorePropertiesFile.exists()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
+            // Without keystore.properties present, this build type has no
+            // signingConfig at all — assembleRelease then fails at the
+            // packaging step instead of quietly emitting an unsigned APK.
         }
         debug {
             isMinifyEnabled = false
