@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">DocVault</string>
+
+    <string name="nav_vault">Vault</string>
+    <string name="nav_scan">Scan</string>
+    <string name="nav_groups">Groups</string>
+    <string name="nav_me">Me</string>
+</resources>

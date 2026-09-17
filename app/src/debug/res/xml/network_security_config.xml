@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  DEBUG ONLY. Permits cleartext HTTP so the app can reach a backend running on
+  the developer's laptop over the LAN.
+
+  This file lives in src/debug/, so it is compiled into the debug APK only.
+  The release build inherits Android's default, which blocks cleartext
+  entirely — a vault app must not ship able to talk plain HTTP.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>
