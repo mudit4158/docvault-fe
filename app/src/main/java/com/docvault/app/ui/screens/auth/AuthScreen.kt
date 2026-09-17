@@ -54,6 +54,8 @@ const val AuthScreenTestTag = "auth_screen"
 fun AuthScreen(
     viewModel: AuthViewModel,
     onSignedIn: () -> Unit,
+    onOtpLogin: () -> Unit,
+    onForgotPassword: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -156,6 +158,21 @@ fun AuthScreen(
                 ),
                 modifier = Modifier.fillMaxWidth().testTag("auth_password"),
             )
+
+            if (!state.isRegisterMode) {
+                Spacer(Modifier.height(8.dp))
+                TextButton(
+                    onClick = onOtpLogin,
+                    enabled = !state.isBusy,
+                    modifier = Modifier.testTag("auth_otp_login"),
+                ) { Text("Sign in with OTP instead") }
+
+                TextButton(
+                    onClick = onForgotPassword,
+                    enabled = !state.isBusy,
+                    modifier = Modifier.testTag("auth_forgot_password"),
+                ) { Text("Forgot password?") }
+            }
 
             Spacer(Modifier.height(8.dp))
             TextButton(onClick = viewModel::toggleServerField) {

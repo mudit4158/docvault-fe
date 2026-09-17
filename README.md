@@ -19,6 +19,7 @@ Everything below assumes the backend is running on your laptop. The app never sh
 | JDK 17 | Android Studio bundles one at `<studio>/jbr` |
 | Android SDK, compileSdk 34 | Usually `%LOCALAPPDATA%\Android\Sdk` on Windows |
 | `local.properties` | Not in git. Create it with `sdk.dir=C:\\Users\\<you>\\AppData\\Local\\Android\\Sdk` |
+| `app/google-services.json` | Optional. Only needed for OTP sign-in — download it from your Firebase project's console and drop it in `app/`. Without it, the app still builds and runs fine; only the "Sign in with OTP" button won't work (password sign-in is unaffected). |
 
 ---
 
@@ -191,6 +192,7 @@ Each feature owns its package under `ui/screens/`. As one grows past a single co
 | Area | State |
 |---|---|
 | Auth — register, sign in/out, profile, quota | ✅ |
+| OTP sign-in (Firebase Phone Auth) | ✅ — needs `google-services.json`; see below |
 | Groups — list, create, detail, members | ✅ |
 | Invitations — invite (contacts or manual), accept, decline | ✅ |
 | Members — remove, leave, transfer admin | ✅ |

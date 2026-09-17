@@ -20,8 +20,13 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.docvault.app.data.DocVaultRepository
 import com.docvault.app.ui.components.DocVaultBottomBar
+import com.docvault.app.ui.components.SecureScreen
 import com.docvault.app.ui.screens.auth.AuthScreen
 import com.docvault.app.ui.screens.auth.AuthViewModel
+import com.docvault.app.ui.screens.auth.ForgotPasswordScreen
+import com.docvault.app.ui.screens.auth.ForgotPasswordViewModel
+import com.docvault.app.ui.screens.auth.OtpAuthScreen
+import com.docvault.app.ui.screens.auth.OtpAuthViewModel
 import com.docvault.app.ui.screens.groups.GroupDetailScreen
 import com.docvault.app.ui.screens.groups.GroupDetailViewModel
 import com.docvault.app.ui.screens.groups.GroupsScreen
@@ -44,6 +49,8 @@ private const val ROUTE_GROUP_DETAIL = "group/{groupId}"
 private const val ROUTE_DOCUMENT_DETAIL = "document/{documentId}"
 private const val ROUTE_TRASH = "trash"
 private const val ROUTE_SCAN = "scan"
+private const val ROUTE_OTP_LOGIN = "otp_login"
+private const val ROUTE_FORGOT_PASSWORD = "forgot_password"
 
 /**
  * Root navigation.
@@ -59,6 +66,16 @@ private const val ROUTE_SCAN = "scan"
  */
 @Composable
 fun DocVaultNavHost(repository: DocVaultRepository, scanCacheStore: ScanCacheStore) {
+    // Applied once, for this composable's entire lifetime — not per-route.
+    // The root NavHost below has several sibling routes (main, group detail,
+    // document detail, trash, scan); a SecureScreen() call inside any one of
+    // them clears the flag the moment you navigate away from it, which is
+    // exactly backwards — you'd be LEAST protected while looking at a
+    // document's details. Scan's own SecureScreen() call was fine in
+    // isolation before this existed but would now double-clear the flag on
+    // its way out, so it's been removed in favour of this one.
+    SecureScreen()
+
     val rootNavController = rememberNavController()
 
     // A rejected token means the session is over — 60-minute expiry makes this
@@ -87,6 +104,33 @@ fun DocVaultNavHost(repository: DocVaultRepository, scanCacheStore: ScanCacheSto
                         popUpTo(ROUTE_AUTH) { inclusive = true }
                     }
                 },
+                onOtpLogin = { rootNavController.navigate(ROUTE_OTP_LOGIN) },
+                onForgotPassword = { rootNavController.navigate(ROUTE_FORGOT_PASSWORD) },
+            )
+        }
+
+        composable(ROUTE_OTP_LOGIN) {
+            OtpAuthScreen(
+                viewModel = viewModel(factory = factoryFor { OtpAuthViewModel(repository) }),
+                onSignedIn = {
+                    rootNavController.navigate(ROUTE_MAIN) {
+                        // Drop both the OTP screen and the sign-in screen underneath it.
+                        popUpTo(ROUTE_AUTH) { inclusive = true }
+                    }
+                },
+                onBack = { rootNavController.popBackStack() },
+            )
+        }
+
+        composable(ROUTE_FORGOT_PASSWORD) {
+            ForgotPasswordScreen(
+                viewModel = viewModel(factory = factoryFor { ForgotPasswordViewModel(repository) }),
+                onDone = {
+                    // Back to sign-in, not straight into the app — resetting the
+                    // credential isn't a session; the user still signs in normally.
+                    rootNavController.popBackStack(ROUTE_AUTH, inclusive = false)
+                },
+                onBack = { rootNavController.popBackStack() },
             )
         }
 

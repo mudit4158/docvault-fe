@@ -26,11 +26,27 @@ data class RegisterRequest(
 
 @Serializable
 data class LoginRequest(
-    val phone: String,
-    val password: String,
-    // The backend dispatches on this to pick an auth provider. Only "password"
-    // exists today; OTP and SSO are additive on the server side.
+    val phone: String? = null,
+    val password: String? = null,
+    // Set for mode="otp" only: the ID token FirebaseAuth returned after the
+    // user entered the SMS code. The backend verifies it server-side and
+    // never sees the code itself — Firebase already did that check.
+    @SerialName("firebase_id_token") val firebaseIdToken: String? = null,
+    // The backend dispatches on this to pick an auth provider. "password" and
+    // "otp" both exist server-side; SSO is additive future scope.
+    //
+    // Deliberately NOT sent when it equals this default: the JSON encoder
+    // below (ApiProvider.kt) sets encodeDefaults=false, so a password login
+    // omits `mode` from the wire entirely, matching the backend's own
+    // model_validator design (see docvault-be's docs/auth_flow.md) rather
+    // than a discriminated union that would require it to always be present.
     val mode: String = "password",
+)
+
+@Serializable
+data class ForgotPasswordRequest(
+    @SerialName("firebase_id_token") val firebaseIdToken: String,
+    @SerialName("new_password") val newPassword: String,
 )
 
 @Serializable

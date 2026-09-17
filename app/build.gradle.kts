@@ -5,6 +5,17 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
+// The google-services plugin FAILS THE BUILD if google-services.json is
+// missing — so it's applied conditionally, not in the plugins {} block
+// above, until a real Firebase project's config file is dropped into app/.
+// OTP login's Kotlin code compiles either way (firebase-auth is a normal
+// dependency, unaffected by this); only signing in with it needs the file.
+// See docvault-be's equivalent GCS_CREDENTIALS_PATH story for the same
+// "code ready, not yet live" shape.
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
 // Where the app looks for the backend by default.
 //
 //   Emulator        -> http://10.0.2.2:8000/   (10.0.2.2 is the host loopback)
@@ -100,6 +111,16 @@ dependencies {
     // Downsampled, cached thumbnail loading for the page reorder strip and the
     // zoom-inspect canvas — no image-loading infra existed before Scan.
     implementation(libs.coil.compose)
+
+    // OTP login: Firebase Phone Auth is entirely client-driven — this app
+    // talks to Firebase directly, and Firebase sends the SMS. The backend
+    // only ever verifies the resulting ID token (see docvault-be's
+    // FirebaseOtpProvider). Compiles either way; actually signing in needs
+    // google-services.json (see the conditional plugin application above).
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth)
+    // .await() on the Task<T> Firebase's callback-based APIs return.
+    implementation(libs.kotlinx.coroutines.play.services)
 
     testImplementation(libs.junit)
     // Lets PageTransforms' real Bitmap/Canvas/ColorMatrix operations run on

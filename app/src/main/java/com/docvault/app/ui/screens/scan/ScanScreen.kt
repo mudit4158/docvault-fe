@@ -24,7 +24,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.docvault.app.ui.components.SecureScreen
 import com.docvault.app.ui.screens.scan.data.ScanSpec
 import com.docvault.app.ui.screens.scan.data.rememberDocumentScanner
 
@@ -39,14 +38,13 @@ const val ScanScreenTestTag = "scan_screen"
  * save. Backing out of the scanner before capturing anything leaves the
  * flow entirely rather than sitting on a blank screen.
  *
- * [SecureScreen] blocks screenshots for the whole lifetime of this flow —
- * captured pages are as sensitive as anything already in the vault
- * (Aadhaar/PAN/passport, PRD §4.9).
+ * Screenshots are blocked here too, but via a single app-wide SecureScreen
+ * call in DocVaultNavHost rather than one local to this screen — a call
+ * here would clear the flag on the way out of Scan even though the rest of
+ * the signed-in app still needs it protected.
  */
 @Composable
 fun ScanScreen(viewModel: ScanViewModel, onFinished: () -> Unit) {
-    SecureScreen()
-
     val state by viewModel.state.collectAsStateWithLifecycle()
     var hasLaunched by remember { mutableStateOf(false) }
     var scanError by remember { mutableStateOf<String?>(null) }

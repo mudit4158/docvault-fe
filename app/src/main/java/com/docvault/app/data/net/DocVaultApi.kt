@@ -42,6 +42,10 @@ interface DocVaultApi {
     @POST("api/v1/auth/me/password")
     suspend fun changePassword(@Body body: ChangePasswordRequest): Response<Unit>
 
+    /** No auth header needed — that's the point, the caller can't log in. */
+    @POST("api/v1/auth/password/forgot")
+    suspend fun forgotPassword(@Body body: ForgotPasswordRequest): Response<Unit>
+
     @GET("api/v1/auth/me/quota")
     suspend fun quota(): Response<QuotaResponse>
 

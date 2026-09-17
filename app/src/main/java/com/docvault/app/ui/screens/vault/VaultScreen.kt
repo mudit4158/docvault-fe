@@ -22,7 +22,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.filled.RestoreFromTrash
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material3.Card
@@ -109,7 +109,10 @@ fun VaultScreen(
                 title = { Text("Vault") },
                 actions = {
                     IconButton(onClick = onOpenTrash, modifier = Modifier.testTag("open_trash")) {
-                        Icon(Icons.Filled.DeleteOutline, contentDescription = "Trash")
+                        // A plain trash-can icon reads as "gone for good" — this one
+                        // exists specifically to signal "still recoverable" (10-day
+                        // retention window), which a generic delete icon doesn't.
+                        Icon(Icons.Filled.RestoreFromTrash, contentDescription = "Trash (restorable for 10 days)")
                     }
                 },
             )
@@ -299,13 +302,21 @@ private fun UploadRow(item: UploadItem, onRetry: () -> Unit, onDismiss: () -> Un
     Card(modifier = Modifier.fillMaxWidth().testTag("upload_${item.key}")) {
         Column(Modifier.padding(14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    item.file.name,
-                    style = MaterialTheme.typography.bodyMedium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
-                )
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        item.file.name,
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    // Lets the user see up front whether a file is anywhere near
+                    // the 20MB cap, rather than finding out only from a 413 error.
+                    Text(
+                        Format.bytes(item.file.size),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 if (item.isFailed) {
                     if (item.canRetry) TextButton(onClick = onRetry) { Text("Retry") }
                     IconButton(onClick = onDismiss) {

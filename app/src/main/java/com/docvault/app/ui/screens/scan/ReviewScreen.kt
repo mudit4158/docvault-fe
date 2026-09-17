@@ -47,6 +47,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import com.docvault.app.data.Format
 import com.docvault.app.ui.screens.scan.data.rememberDocumentScanner
 
 const val ReviewScreenTestTag = "scan_review_screen"
@@ -104,6 +105,16 @@ fun ReviewScreen(
             Text(
                 "${state.pages.size} page${if (state.pages.size == 1) "" else "s"}",
                 style = MaterialTheme.typography.titleMedium,
+            )
+            // "Estimated" rather than "final": the actual export (a combined PDF
+            // for >1 page) can differ slightly from the sum of its source pages —
+            // this is a heads-up before the 20MB cap, not a guarantee of the exact
+            // upload size.
+            val estimatedBytes = remember(state.pages) { state.pages.sumOf { it.workingFile.length() } }
+            Text(
+                "Estimated size: ${Format.bytes(estimatedBytes)}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(Modifier.height(12.dp))
 
@@ -215,6 +226,11 @@ private fun PageThumbnail(
         }
         Spacer(Modifier.height(2.dp))
         Text("Page ${index + 1}", style = MaterialTheme.typography.labelSmall)
+        Text(
+            Format.bytes(thumbnailFile.length()),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onMoveLeft, enabled = canMoveLeft, modifier = Modifier.size(32.dp)) {
                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Move earlier")

@@ -47,6 +47,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import com.docvault.app.data.Format
 import com.docvault.app.ui.screens.scan.data.PageEdit
 import com.docvault.app.ui.screens.scan.data.PageTransforms
 import com.docvault.app.ui.screens.scan.data.rememberDocumentScanner
@@ -100,7 +101,18 @@ fun PageEditScreen(viewModel: ScanViewModel, onDone: () -> Unit, onCancel: () ->
         modifier = Modifier.testTag(PageEditScreenTestTag),
         topBar = {
             TopAppBar(
-                title = { Text("Page ${state.currentPageIndex + 1} of ${state.pages.size}") },
+                title = {
+                    Column {
+                        Text("Page ${state.currentPageIndex + 1} of ${state.pages.size}")
+                        // Updates as edits are applied (e.g. B&W/brightness change
+                        // the encoded size) — lets the user see the effect of an
+                        // edit before saving, not just the final upload's size.
+                        Text(
+                            Format.bytes(page.workingFile.length()),
+                            style = MaterialTheme.typography.labelSmall,
+                        )
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = { confirmingDiscard = true }) {
                         Icon(Icons.Filled.Close, contentDescription = "Discard scan")

@@ -16,7 +16,8 @@ minSdk 26 / targetSdk 34 / compileSdk 34
 | Networking (Retrofit + OkHttp + kotlinx.serialization) | ✅ Built |
 | DI graph (`AppContainer`, hand-wired) | ✅ Built |
 | Token persistence (EncryptedSharedPreferences) | ✅ Built |
-| Register / sign in / sign out | ✅ Built |
+| Register / sign in / sign out | ✅ Built — password complexity enforced server-side (upper/lower/digit/special) |
+| OTP sign-in (Firebase Phone Auth) | ✅ Built (`ui/screens/auth/OtpAuthScreen.kt`) — additional to password, not a replacement. Needs `google-services.json` to actually work; compiles without it |
 | Me tab — profile, upload allowance | ✅ Built |
 | Groups — list, create, detail, members | ✅ Built |
 | Invitations — list, accept, decline | ✅ Built |
@@ -26,7 +27,8 @@ minSdk 26 / targetSdk 34 / compileSdk 34
 | Trash + restore | ✅ Built |
 | Group Documents tab | ✅ Built |
 | Scan tab — capture (ML Kit Document Scanner: boundary detect + crop + gallery import), zoom-inspect, rotate/brightness/contrast/B&W, delete/retake/reorder pages, PDF (multi-page) or PDF/Image choice (single page), save via the existing `uploadDocument` path | ✅ Built (`ui/screens/scan/`) — no backend changes; uploads through the same `POST /documents` Vault already uses |
-| In-app preview with screenshots blocked (`FLAG_SECURE`) | ⬜ Pending — tracker #63. Scan reuses the same `SecureScreen` component for its own flow now (`ui/components/SecureScreen.kt`) |
+| Screenshots blocked (`FLAG_SECURE`) app-wide once signed in | ✅ Built — one `SecureScreen()` call in `DocVaultNavHost`, not per-screen (see Architecture Notes) |
+| In-app preview with screenshots blocked | ⬜ Pending — tracker #63 (covered app-wide by the above regardless) |
 | Access-log viewer | ⬜ Pending — tracker #66 |
 | Offline cache | ⬜ Not built |
 
@@ -158,6 +160,23 @@ assuming a single author when writing commit messages or attributing work.
   to include.
 - **State survives tab switches.** The bottom-nav `popUpTo`/`saveState`/`restoreState` pattern in
   `DocVaultNavHost` is deliberate — keep it when adding new top-level destinations.
+- **`SecureScreen()` (blocks screenshots, `FLAG_SECURE`) is called exactly once, at the top of
+  `DocVaultNavHost` itself — never inside an individual route's screen.** The root `NavHost` has
+  several sibling top-level routes (main, group detail, document detail, trash, scan, otp login);
+  a `SecureScreen()` call inside any one of them clears the flag the instant you navigate away from
+  it (its `DisposableEffect` runs `onDispose`), which would leave you *less* protected while looking
+  at, say, a document's details than while sitting on the tab list. Calling it once on
+  `DocVaultNavHost` — a composable that only leaves composition when the Activity itself does —
+  means it's set for the app's entire runtime, both before and after sign-in (the sign-in screen has
+  nothing sensitive to protect either way, so this is simpler than trying to gate it on auth state).
+  Scan used to call `SecureScreen()` itself before this existed; that call is gone now — leaving it
+  in would double-clear the flag on the way out of Scan.
+- **Scan is the deliberate exception to the bottom-tab shell.** Tapping the Scan tab does not
+  navigate `MainTabs`' inner `NavHost` — `DocVaultBottomBar`'s `onDestinationSelected` special-cases
+  it to call `onOpenScan()`, which pushes a root-level `"scan"` route outside the tab `Scaffold`
+  entirely, matching the original placeholder's own KDoc ("a full-screen modal flow outside the
+  tab bar"). A fresh `ScanViewModel` (and cache session) is created every time — never
+  `saveState`/`restoreState`'d like Vault/Groups/Me are.
 - **Scan is the deliberate exception to the bottom-tab shell.** Tapping the Scan tab does not
   navigate `MainTabs`' inner `NavHost` — `DocVaultBottomBar`'s `onDestinationSelected` special-cases
   it to call `onOpenScan()`, which pushes a root-level `"scan"` route outside the tab `Scaffold`
@@ -169,6 +188,20 @@ assuming a single author when writing commit messages or attributing work.
   Boundary detection, crop, multi-page sessions and gallery import all come from that one
   Google-maintained flow; rotate/brightness/contrast/B&W are a custom screen layered after it
   (`PageEditScreen.kt`), since ML Kit's own UI doesn't support those.
+- **OTP sign-in is entirely client-driven, like Scan's ML Kit choice.** This app talks to Firebase
+  directly (`OtpAuthViewModel`, `PhoneAuthProvider.verifyPhoneNumber`) — Firebase sends the SMS and
+  owns the resend cooldown; the backend only ever verifies the resulting ID token
+  (`FirebaseOtpProvider` in docvault-be). Password sign-in is unaffected; OTP is additive.
+  **The `google-services` Gradle plugin is applied conditionally** in `app/build.gradle.kts`
+  (`if (file("google-services.json").exists())`) rather than unconditionally in the `plugins {}`
+  block — that plugin hard-fails the build the moment it can't find the file, and this repo needs
+  to keep building for anyone who hasn't dropped in a real Firebase project's config yet. The
+  Kotlin code compiles either way; only actually signing in needs the file. Pin `firebase-bom` and
+  `kotlinx-coroutines-play-services` to versions built against this project's Kotlin version
+  (`2.0.20`) — newer releases of both are compiled with newer Kotlin metadata and fail with
+  "Module was compiled with an incompatible version of Kotlin" if bumped carelessly; this was hit
+  and fixed once already (see git history) by pinning to `firebase-bom 33.16.0` /
+  `kotlinx-coroutines-play-services 1.9.0` rather than the latest of either.
 
 ## Backend Integration
 

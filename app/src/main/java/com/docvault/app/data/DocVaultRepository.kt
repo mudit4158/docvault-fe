@@ -12,6 +12,7 @@ import com.docvault.app.data.net.CreateShareRequest
 import com.docvault.app.data.net.DocumentDetail
 import com.docvault.app.data.net.DocumentPage
 import com.docvault.app.data.net.DocumentSummary
+import com.docvault.app.data.net.ForgotPasswordRequest
 import com.docvault.app.data.net.GroupDocument
 import com.docvault.app.data.net.GroupResponse
 import com.docvault.app.data.net.InvitationResponse
@@ -68,7 +69,17 @@ class DocVaultRepository(
 
     /** On success the token is persisted, so later calls are authenticated. */
     suspend fun login(phone: String, password: String): ApiResult<Unit> =
-        when (val result = apiCall { apiProvider.api().login(LoginRequest(phone, password)) }) {
+        signIn(LoginRequest(phone = phone, password = password, mode = "password"))
+
+    /**
+     * Sign in with the ID token FirebaseAuth returned after the user entered
+     * the SMS code Firebase itself sent — this backend never sees the code.
+     */
+    suspend fun loginWithOtp(firebaseIdToken: String): ApiResult<Unit> =
+        signIn(LoginRequest(firebaseIdToken = firebaseIdToken, mode = "otp"))
+
+    private suspend fun signIn(body: LoginRequest): ApiResult<Unit> =
+        when (val result = apiCall { apiProvider.api().login(body) }) {
             is ApiResult.Ok -> {
                 tokenStore.token = result.value.accessToken
                 ApiResult.Ok(Unit)
@@ -76,7 +87,13 @@ class DocVaultRepository(
             is ApiResult.Err -> result
         }
 
-    fun signOut() = tokenStore.signOut()
+    fun signOut() {
+        tokenStore.signOut()
+        // Only relevant if this device ever signed in via OTP. Guarded: if
+        // google-services.json isn't in place yet, FirebaseAuth has no
+        // default app and getInstance() would throw.
+        runCatching { com.google.firebase.auth.FirebaseAuth.getInstance().signOut() }
+    }
 
     suspend fun me(): ApiResult<AccountResponse> = apiCall { apiProvider.api().me() }
 
@@ -88,6 +105,17 @@ class DocVaultRepository(
     /** Resolve a phone number to an account. Err(404) when not registered. */
     suspend fun lookupAccount(phone: String): ApiResult<AccountSummary> =
         apiCall { apiProvider.api().lookupAccount(LookupRequest(phone)) }
+
+    /**
+     * Reset a forgotten password using a verified Firebase phone ID token.
+     *
+     * Unlike [signIn], this never persists a token — the 204 response carries
+     * none. The caller still has to sign in normally afterwards.
+     */
+    suspend fun resetPassword(firebaseIdToken: String, newPassword: String): ApiResult<Unit> =
+        apiCall {
+            apiProvider.api().forgotPassword(ForgotPasswordRequest(firebaseIdToken, newPassword))
+        }
 
     // --- groups -------------------------------------------------------
 
