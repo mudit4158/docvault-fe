@@ -77,6 +77,17 @@ file to replace with a Hilt module if it grows.
 **ViewModels take constructor dependencies**, supplied by a small `factoryFor { }` helper in
 `DocVaultNavHost`. There is no `ViewModel` with a no-arg constructor.
 
+**Every tab screen under `MainTabs` (Vault, Groups, Me) sets `contentWindowInsets =
+WindowInsets(0, 0, 0, 0)` on its own `Scaffold`.** `MainTabs` itself has an outer `Scaffold`
+(with the bottom nav bar) that already reserves status-bar/nav-bar space via its default
+insets — since each tab screen's `Scaffold` also defaults to `WindowInsets.systemBars`,
+nesting them without zeroing the inner one double-applies that padding (visible as dead
+space above the top bar and below any FAB). This was invisible on a phone with thin
+gesture-nav insets and glaringly obvious on one with a tall 3-button nav bar — a real bug
+reported from exactly that mismatch. Any *new* tab screen added under `MainTabs` needs the
+same override; a root-level screen (document detail, group detail, scan, auth, ...) does
+**not** — those aren't nested inside another `Scaffold`, so the default is correct there.
+
 **The backend URL is editable at runtime** from the sign-in screen, and cached in `TokenStore`.
 `ApiProvider` rebuilds Retrofit when it changes, so one APK works on an emulator (`10.0.2.2`) and
 on a phone pointed at a laptop's LAN IP. Build-time default via `-PdocvaultApiUrl=...`.

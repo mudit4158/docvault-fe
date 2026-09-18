@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -111,6 +112,14 @@ fun VaultScreen(
 
     Scaffold(
         modifier = modifier.testTag(VaultScreenTestTag),
+        // This screen is nested inside MainTabs' own Scaffold (DocVaultNavHost.kt),
+        // which already reserves status-bar/nav-bar space around the tab content.
+        // Scaffold's default contentWindowInsets would otherwise reserve that
+        // space a SECOND time here, showing up as extra empty gaps above the
+        // top bar and below the FAB — barely visible on a phone with thin
+        // gesture-nav insets, much more visible on one with a tall fixed-height
+        // 3-button nav bar. Zero insets here; the outer Scaffold already owns them.
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
                 title = { Text("Vault") },
