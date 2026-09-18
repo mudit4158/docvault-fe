@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -54,6 +53,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.docvault.app.data.net.GroupResponse
 import com.docvault.app.data.net.InvitationResponse
+import com.docvault.app.ui.components.TAB_SCREEN_ZERO_INSETS
 import com.docvault.app.ui.theme.docVaultTextFieldColors
 
 const val GroupsScreenTestTag = "groups_screen"
@@ -94,8 +94,11 @@ fun GroupsScreen(
         // Nested inside MainTabs' own Scaffold (DocVaultNavHost.kt), which
         // already reserves status-bar/nav-bar insets — see VaultScreen's
         // matching comment for why this must be zeroed here, not left default.
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        topBar = { TopAppBar(title = { Text("Groups") }) },
+        contentWindowInsets = TAB_SCREEN_ZERO_INSETS,
+        // TopAppBar reserves status-bar height itself by default
+        // (TopAppBarDefaults.windowInsets), separate from Scaffold's own
+        // contentWindowInsets above — both need zeroing, see VaultScreen.
+        topBar = { TopAppBar(title = { Text("Groups") }, windowInsets = TAB_SCREEN_ZERO_INSETS) },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             FloatingActionButton(onClick = { viewModel.showCreateDialog(true) }) {
