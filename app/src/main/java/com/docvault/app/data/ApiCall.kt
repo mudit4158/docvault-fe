@@ -1,6 +1,7 @@
 package com.docvault.app.data
 
 import com.docvault.app.data.net.ApiError
+import com.docvault.app.data.net.ValidationErrorBody
 import kotlinx.serialization.json.Json
 import retrofit2.Response
 import java.io.IOException
@@ -49,9 +50,23 @@ private fun <T> Response<T>.errorMessage(): String {
     }
     if (detail != null) return detail
 
-    // 422 bodies are FastAPI's validation envelope, whose `detail` is a list
-    // rather than a string, so the decode above misses it.
-    if (code() == 422) return "Please check the details you entered."
+    // 422 bodies are FastAPI's validation envelope: `detail` is a LIST of
+    // {msg, ...} objects, not a string, so the decode above always misses
+    // it — this used to silently fall through to a generic "please check
+    // the details you entered" for something as specific as "your password
+    // needs an uppercase letter." Parse the real shape instead.
+    if (code() == 422) {
+        val messages = raw?.let {
+            runCatching { errorJson.decodeFromString<ValidationErrorBody>(it) }.getOrNull()
+        }?.detail?.map {
+            // Pydantic prefixes a validator's own ValueError message with
+            // "Value error, " — strip it, it means nothing to a user.
+            it.msg.removePrefix("Value error, ")
+        }?.filter { it.isNotBlank() }
+
+        if (!messages.isNullOrEmpty()) return messages.joinToString("\n")
+        return "Please check the details you entered."
+    }
 
     return when (code()) {
         401 -> "Your session has expired. Please sign in again."

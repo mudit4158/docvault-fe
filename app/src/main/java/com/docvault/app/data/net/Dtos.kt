@@ -237,6 +237,20 @@ data class GroupDocument(
 
 // --- errors ---------------------------------------------------------------
 
-/** FastAPI's error envelope: `{"detail": "..."}`. */
+/** FastAPI's error envelope for a typed exception: `{"detail": "..."}`. */
 @Serializable
 data class ApiError(val detail: String? = null)
+
+/**
+ * FastAPI's error envelope for a 422 request-validation failure — `detail`
+ * here is a LIST of per-field errors, not a string, so it never matches
+ * [ApiError]. A password missing an uppercase letter surfaces via exactly
+ * this shape (a `ValueError` raised inside a Pydantic field validator).
+ */
+// No `loc` field: it can mix strings and ints (list indices), and the
+// message alone is all that's ever shown to the user.
+@Serializable
+data class ValidationErrorDetail(val msg: String = "")
+
+@Serializable
+data class ValidationErrorBody(val detail: List<ValidationErrorDetail> = emptyList())
