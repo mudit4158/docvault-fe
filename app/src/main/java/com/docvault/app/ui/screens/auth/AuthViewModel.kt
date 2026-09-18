@@ -20,6 +20,8 @@ data class AuthUiState(
     val nationalNumber: String = "",
     val displayName: String = "",
     val password: String = "",
+    /** Register mode only — ignored (and irrelevant) for sign-in. */
+    val confirmPassword: String = "",
     val serverUrl: String = "",
     val showServerField: Boolean = false,
     val isBusy: Boolean = false,
@@ -51,10 +53,13 @@ class AuthViewModel(private val repository: DocVaultRepository) : ViewModel() {
 
     fun onNameChange(value: String) = _state.update { it.copy(displayName = value, error = null) }
     fun onPasswordChange(value: String) = _state.update { it.copy(password = value, error = null) }
+    fun onConfirmPasswordChange(value: String) =
+        _state.update { it.copy(confirmPassword = value, error = null) }
     fun onServerUrlChange(value: String) = _state.update { it.copy(serverUrl = value, error = null) }
     fun toggleServerField() = _state.update { it.copy(showServerField = !it.showServerField) }
 
-    fun toggleMode() = _state.update { it.copy(isRegisterMode = !it.isRegisterMode, error = null) }
+    fun toggleMode() =
+        _state.update { it.copy(isRegisterMode = !it.isRegisterMode, confirmPassword = "", error = null) }
 
     fun submit() {
         val current = _state.value
@@ -108,6 +113,7 @@ class AuthViewModel(private val repository: DocVaultRepository) : ViewModel() {
         s.password.length < MIN_PASSWORD -> "Password must be at least $MIN_PASSWORD characters"
         // bcrypt truncates beyond 72 bytes, so the backend rejects longer ones.
         s.password.length > MAX_PASSWORD -> "Password must be at most $MAX_PASSWORD characters"
+        s.isRegisterMode && s.confirmPassword != s.password -> "Passwords don't match"
         else -> null
     }
 

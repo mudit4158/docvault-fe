@@ -63,6 +63,7 @@ fun AuthScreen(
     // Local, not in the ViewModel: it is pure view state and must reset if the
     // screen is recreated, so a revealed password never survives a rotation.
     var passwordVisible by remember { mutableStateOf(false) }
+    var confirmPasswordVisible by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.signedIn) {
         if (state.signedIn) onSignedIn()
@@ -155,10 +156,51 @@ fun AuthScreen(
                 },
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Password,
-                    imeAction = ImeAction.Done,
+                    imeAction = if (state.isRegisterMode) ImeAction.Next else ImeAction.Done,
                 ),
                 modifier = Modifier.fillMaxWidth().testTag("auth_password"),
             )
+
+            if (state.isRegisterMode) {
+                Spacer(Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = state.confirmPassword,
+                    onValueChange = viewModel::onConfirmPasswordChange,
+                    label = { Text("Confirm password") },
+                    singleLine = true,
+                    enabled = !state.isBusy,
+                    colors = docVaultTextFieldColors(),
+                    visualTransformation = if (confirmPasswordVisible) {
+                        VisualTransformation.None
+                    } else {
+                        PasswordVisualTransformation()
+                    },
+                    trailingIcon = {
+                        IconButton(
+                            onClick = { confirmPasswordVisible = !confirmPasswordVisible },
+                            modifier = Modifier.testTag("auth_confirm_password_toggle"),
+                        ) {
+                            Icon(
+                                imageVector = if (confirmPasswordVisible) {
+                                    Icons.Filled.VisibilityOff
+                                } else {
+                                    Icons.Filled.Visibility
+                                },
+                                contentDescription = if (confirmPasswordVisible) {
+                                    "Hide password"
+                                } else {
+                                    "Show password"
+                                },
+                            )
+                        }
+                    },
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Done,
+                    ),
+                    modifier = Modifier.fillMaxWidth().testTag("auth_confirm_password"),
+                )
+            }
 
             if (!state.isRegisterMode) {
                 Spacer(Modifier.height(8.dp))

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -90,6 +91,10 @@ fun GroupsScreen(
 
     Scaffold(
         modifier = modifier.testTag(GroupsScreenTestTag),
+        // Nested inside MainTabs' own Scaffold (DocVaultNavHost.kt), which
+        // already reserves status-bar/nav-bar insets — see VaultScreen's
+        // matching comment for why this must be zeroed here, not left default.
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = { TopAppBar(title = { Text("Groups") }) },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {

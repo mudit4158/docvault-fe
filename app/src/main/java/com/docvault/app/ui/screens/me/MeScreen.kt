@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -108,6 +109,10 @@ fun MeScreen(
 
     Scaffold(
         modifier = modifier.testTag(MeScreenTestTag),
+        // Nested inside MainTabs' own Scaffold (DocVaultNavHost.kt), which
+        // already reserves status-bar/nav-bar insets — see VaultScreen's
+        // matching comment for why this must be zeroed here, not left default.
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = { TopAppBar(title = { Text("Me") }) },
     ) { padding ->
         PullToRefreshBox(
