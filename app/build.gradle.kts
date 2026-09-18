@@ -134,6 +134,12 @@ dependencies {
     // Bearer token at rest
     implementation(libs.androidx.security.crypto)
 
+    // Real per-country phone validation (correct national length, valid
+    // mobile prefixes) — see PhoneNumber.kt's KDoc for why the hand-rolled
+    // E.164-shape regex it replaces wasn't enough (it accepted anything
+    // digit-count-plausible, e.g. 9999999999 for India).
+    implementation(libs.libphonenumber)
+
     // Scan: capture + edge detection + crop UI + multi-page + gallery import,
     // all in one Google-maintained flow (see docvault-be's scan_to_pdf.md —
     // either capture approach uploads through the same endpoint, so this

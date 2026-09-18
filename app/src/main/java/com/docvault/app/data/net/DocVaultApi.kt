@@ -46,6 +46,15 @@ interface DocVaultApi {
     @POST("api/v1/auth/password/forgot")
     suspend fun forgotPassword(@Body body: ForgotPasswordRequest): Response<Unit>
 
+    /**
+     * 404 if [body]'s phone has no account. Called before triggering
+     * Firebase's OTP send, so an unregistered number never wastes one.
+     *
+     * No auth header needed — same reason as [forgotPassword].
+     */
+    @POST("api/v1/auth/password/forgot/check-phone")
+    suspend fun checkPhoneRegistered(@Body body: LookupRequest): Response<Unit>
+
     @GET("api/v1/auth/me/quota")
     suspend fun quota(): Response<QuotaResponse>
 
