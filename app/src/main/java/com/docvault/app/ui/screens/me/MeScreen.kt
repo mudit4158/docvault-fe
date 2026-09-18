@@ -46,7 +46,6 @@ const val MeScreenTestTag = "me_screen"
 data class MeUiState(
     val account: AccountResponse? = null,
     val quota: QuotaResponse? = null,
-    val serverUrl: String = "",
     val isLoading: Boolean = true,
     val isRefreshing: Boolean = false,
     val error: String? = null,
@@ -54,7 +53,7 @@ data class MeUiState(
 
 class MeViewModel(private val repository: DocVaultRepository) : ViewModel() {
 
-    private val _state = MutableStateFlow(MeUiState(serverUrl = repository.baseUrl))
+    private val _state = MutableStateFlow(MeUiState())
     val state: StateFlow<MeUiState> = _state.asStateFlow()
 
     init {
@@ -181,18 +180,6 @@ fun MeScreen(
                             }
                         }
                         Spacer(Modifier.height(16.dp))
-                    }
-
-                    Card(Modifier.fillMaxWidth()) {
-                        Column(Modifier.padding(16.dp)) {
-                            Text("Server", style = MaterialTheme.typography.titleSmall)
-                            Spacer(Modifier.height(4.dp))
-                            Text(
-                                state.serverUrl,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
                     }
 
                     Spacer(Modifier.height(24.dp))
