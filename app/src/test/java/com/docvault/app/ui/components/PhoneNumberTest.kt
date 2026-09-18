@@ -53,6 +53,20 @@ class PhoneNumberTest {
         assertFalse(PhoneNumber.isValid(india, ""))
     }
 
+    @Test
+    fun `rejects a number that is all one repeated digit`() {
+        // libphonenumber alone does NOT catch this: 9999999999 is a
+        // structurally valid Indian mobile shape (starts with 9, 10 digits)
+        // per the numbering plan, so the library has no basis to reject it.
+        // This needs its own explicit heuristic — see PhoneNumber.isValid.
+        // Deliberately narrow: only "every digit identical", not "looks
+        // suspicious" in some fuzzier sense — 9876543210 (descending) is
+        // this file's own canonical example of a REAL valid number, so any
+        // broader sequential-digit heuristic would reject valid numbers.
+        assertFalse(PhoneNumber.isValid(india, "9999999999"))
+        assertFalse(PhoneNumber.isValid(india, "8888888888"))
+    }
+
     // --- parsing what contacts actually contain ---------------------------
 
     @Test

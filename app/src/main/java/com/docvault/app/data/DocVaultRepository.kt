@@ -118,6 +118,15 @@ class DocVaultRepository(
             apiProvider.api().forgotPassword(ForgotPasswordRequest(firebaseIdToken, newPassword))
         }
 
+    /**
+     * Err(404) if [phone] has no account. Called before triggering Firebase's
+     * OTP send in the forgot-password flow, so an unregistered number never
+     * wastes one — see the backend's matching docstring for the accepted
+     * phone-enumeration tradeoff this makes.
+     */
+    suspend fun checkPhoneRegistered(phone: String): ApiResult<Unit> =
+        apiCall { apiProvider.api().checkPhoneRegistered(LookupRequest(phone)) }
+
     // --- groups -------------------------------------------------------
 
     suspend fun listGroups(): ApiResult<List<GroupResponse>> =

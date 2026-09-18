@@ -7,11 +7,10 @@ package com.docvault.app.ui.components
  * targets plus the common diaspora destinations, and keeps the picker short
  * enough to scroll.
  *
- * NOTE: this list plus [PhoneNumber] normalisation gives E.164 *shape*, not
- * real per-country validation (correct national number lengths, valid prefixes,
- * mobile vs landline). The backend validates the same shape. If real validation
- * is needed, swap both sides for libphonenumber rather than growing the rules
- * here — hand-rolled phone validation is a well-known source of bugs.
+ * NOTE: [PhoneNumber.isValid] now checks real per-country validity via
+ * libphonenumber (correct national length, plausible mobile prefix), not
+ * just E.164 shape. This curated country list only decides which dial codes
+ * the picker offers — it isn't itself a source of validation rules.
  */
 data class Country(
     val isoCode: String,
