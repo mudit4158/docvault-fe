@@ -1,4 +1,3 @@
-import com.google.firebase.appdistribution.gradle.firebaseAppDistribution
 import java.util.Properties
 
 plugins {
@@ -29,19 +28,6 @@ val keystoreProperties = Properties().apply {
 // "code ready, not yet live" shape.
 if (file("google-services.json").exists()) {
     apply(plugin = "com.google.gms.google-services")
-    apply(plugin = "com.google.firebase.appdistribution")
-    // serviceCredentialsFile: a dedicated service account (roles/
-    // firebaseappdistro.admin only, nothing broader) — see app-distribution-
-    // key.json, gitignored, never committed. No Firebase CLI / Node.js
-    // needed this way.
-    // groups: the tester group's alias from the Firebase console ->
-    // Release & Monitor -> App Distribution -> Testers & Groups. Passed at
-    // build time (-PappDistributionGroups=...) rather than hardcoded here,
-    // since the group didn't exist yet when this was wired up.
-    firebaseAppDistribution {
-        serviceCredentialsFile = rootProject.file("app-distribution-key.json").path
-        groups = (project.findProperty("appDistributionGroups") as String?).orEmpty()
-    }
 }
 
 // Where the app looks for the backend by default.
