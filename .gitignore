@@ -28,6 +28,9 @@ render.experimental.xml
 *.keystore
 keystore.properties
 
+# Service account keys (e.g. Firebase App Distribution uploads)
+*-key.json
+
 # Google Services (e.g. APIs or Firebase)
 google-services.json
 
