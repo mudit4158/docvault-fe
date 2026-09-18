@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -35,6 +34,7 @@ import com.docvault.app.data.ApiResult
 import com.docvault.app.data.DocVaultRepository
 import com.docvault.app.data.net.AccountResponse
 import com.docvault.app.data.net.QuotaResponse
+import com.docvault.app.ui.components.TAB_SCREEN_ZERO_INSETS
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -112,8 +112,11 @@ fun MeScreen(
         // Nested inside MainTabs' own Scaffold (DocVaultNavHost.kt), which
         // already reserves status-bar/nav-bar insets — see VaultScreen's
         // matching comment for why this must be zeroed here, not left default.
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        topBar = { TopAppBar(title = { Text("Me") }) },
+        contentWindowInsets = TAB_SCREEN_ZERO_INSETS,
+        // TopAppBar reserves status-bar height itself by default
+        // (TopAppBarDefaults.windowInsets), separate from Scaffold's own
+        // contentWindowInsets above — both need zeroing, see VaultScreen.
+        topBar = { TopAppBar(title = { Text("Me") }, windowInsets = TAB_SCREEN_ZERO_INSETS) },
     ) { padding ->
         PullToRefreshBox(
             isRefreshing = state.isRefreshing,

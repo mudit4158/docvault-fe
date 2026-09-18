@@ -77,16 +77,19 @@ file to replace with a Hilt module if it grows.
 **ViewModels take constructor dependencies**, supplied by a small `factoryFor { }` helper in
 `DocVaultNavHost`. There is no `ViewModel` with a no-arg constructor.
 
-**Every tab screen under `MainTabs` (Vault, Groups, Me) sets `contentWindowInsets =
-WindowInsets(0, 0, 0, 0)` on its own `Scaffold`.** `MainTabs` itself has an outer `Scaffold`
-(with the bottom nav bar) that already reserves status-bar/nav-bar space via its default
-insets — since each tab screen's `Scaffold` also defaults to `WindowInsets.systemBars`,
-nesting them without zeroing the inner one double-applies that padding (visible as dead
-space above the top bar and below any FAB). This was invisible on a phone with thin
-gesture-nav insets and glaringly obvious on one with a tall 3-button nav bar — a real bug
-reported from exactly that mismatch. Any *new* tab screen added under `MainTabs` needs the
-same override; a root-level screen (document detail, group detail, scan, auth, ...) does
-**not** — those aren't nested inside another `Scaffold`, so the default is correct there.
+**Every tab screen under `MainTabs` (Vault, Groups, Me) uses `TAB_SCREEN_ZERO_INSETS`
+(`ui/components/TabScreenInsets.kt`) in TWO places: its own `Scaffold`'s `contentWindowInsets`
+AND its `TopAppBar`'s `windowInsets`.** `MainTabs` itself has an outer `Scaffold` (with the
+bottom nav bar) that already reserves status-bar/nav-bar space for the whole tab area. Left at
+their defaults, a tab screen's own `Scaffold` (`WindowInsets.systemBars`) *and*, independently,
+its `TopAppBar` (`TopAppBarDefaults.windowInsets`, unaffected by the Scaffold's own setting)
+would each reserve that same space a second time — two separate defaults, so zeroing only one
+still leaves a gap. This was invisible on a phone with thin gesture-nav insets and glaringly
+obvious on one with a tall 3-button nav bar — a real bug reported twice from exactly that
+mismatch, once per default that still needed fixing. Any *new* tab screen added under
+`MainTabs` needs both overrides; a root-level screen (document detail, group detail, scan,
+auth, ...) does **not** — those aren't nested inside another `Scaffold`, so the real default is
+correct there, and applying `TAB_SCREEN_ZERO_INSETS` to one would draw it under the status bar.
 
 **The backend URL is editable at runtime** from the sign-in screen, and cached in `TokenStore`.
 `ApiProvider` rebuilds Retrofit when it changes, so one APK works on an emulator (`10.0.2.2`) and

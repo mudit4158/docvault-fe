@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -66,6 +65,7 @@ import com.docvault.app.data.DocTypes
 import com.docvault.app.data.FileRules
 import com.docvault.app.data.Format
 import com.docvault.app.data.net.DocumentSummary
+import com.docvault.app.ui.components.TAB_SCREEN_ZERO_INSETS
 import com.docvault.app.ui.components.documentIcon
 import com.docvault.app.ui.theme.docVaultTextFieldColors
 
@@ -119,10 +119,15 @@ fun VaultScreen(
         // top bar and below the FAB — barely visible on a phone with thin
         // gesture-nav insets, much more visible on one with a tall fixed-height
         // 3-button nav bar. Zero insets here; the outer Scaffold already owns them.
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        contentWindowInsets = TAB_SCREEN_ZERO_INSETS,
         topBar = {
             TopAppBar(
                 title = { Text("Vault") },
+                // TopAppBar reserves status-bar height itself by default
+                // (TopAppBarDefaults.windowInsets), entirely separate from
+                // Scaffold's contentWindowInsets above — zeroing only the
+                // Scaffold wasn't enough; the bar needs the same override.
+                windowInsets = TAB_SCREEN_ZERO_INSETS,
                 actions = {
                     IconButton(onClick = onOpenTrash, modifier = Modifier.testTag("open_trash")) {
                         // A plain trash-can icon reads as "gone for good" — this one
