@@ -73,6 +73,13 @@ class ForgotPasswordViewModel(private val repository: DocVaultRepository) : View
     fun onConfirmPasswordChange(value: String) =
         _state.update { it.copy(confirmPassword = value, error = null) }
 
+    /**
+     * Checks the phone is actually registered before spending an OTP on it —
+     * see [DocVaultRepository.checkPhoneRegistered]'s KDoc for the accepted
+     * phone-enumeration tradeoff this makes. Firebase is only triggered on
+     * a 204; a 404 short-circuits straight to an actionable error, with no
+     * SMS sent and no wait.
+     */
     fun sendCode(activity: Activity) {
         val current = _state.value
         if (current.isBusy) return
@@ -82,7 +89,21 @@ class ForgotPasswordViewModel(private val repository: DocVaultRepository) : View
         }
 
         _state.update { it.copy(isBusy = true, error = null) }
-        startVerification(activity, current.e164, resend = false)
+        viewModelScope.launch {
+            when (val result = repository.checkPhoneRegistered(current.e164)) {
+                is ApiResult.Ok -> startVerification(activity, current.e164, resend = false)
+                is ApiResult.Err -> _state.update {
+                    it.copy(
+                        isBusy = false,
+                        error = if (result.status == 404) {
+                            "No DocVault account found for this number. Check the number, or create an account instead."
+                        } else {
+                            result.message
+                        },
+                    )
+                }
+            }
+        }
     }
 
     fun resendCode(activity: Activity) {

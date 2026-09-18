@@ -25,7 +25,8 @@ class AuthInterceptor(private val tokenStore: TokenStore) : Interceptor {
 
         val isPublic = path.endsWith("/auth/login") ||
             path.endsWith("/auth/register") ||
-            path.endsWith("/auth/password/forgot")
+            path.endsWith("/auth/password/forgot") ||
+            path.endsWith("/auth/password/forgot/check-phone")
         val token = tokenStore.token
 
         if (isPublic || token == null) return chain.proceed(request)
